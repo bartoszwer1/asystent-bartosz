@@ -1,11 +1,10 @@
-// Endpoint backendu
-const API_ENDPOINT = 'http://localhost:3000/api/chat';
+// public/script.js
 
 // Elementy DOM
 const sendButton = document.getElementById('sendButton');
 const userInput = document.getElementById('userInput');
 const conversation = document.getElementById('conversation');
-const container = document.querySelector('.container'); // Dodany kontener
+const container = document.querySelector('.container'); // Kontener główny
 
 // Funkcja do dodawania wiadomości do konwersacji
 function addMessage(sender, text) {
@@ -16,8 +15,10 @@ function addMessage(sender, text) {
     textDiv.classList.add('text');
 
     if (sender === 'assistant') {
-        // Przekształć Markdown na HTML
-        textDiv.innerHTML = marked.parse(text);
+        // Przekształć Markdown na HTML i oczyść
+        const dirtyHTML = marked.parse(text);
+        const cleanHTML = DOMPurify.sanitize(dirtyHTML);
+        textDiv.innerHTML = cleanHTML;
     } else {
         // Dla wiadomości użytkownika wyświetl jako tekst
         textDiv.textContent = text;
@@ -31,8 +32,13 @@ function addMessage(sender, text) {
 }
 
 // Funkcja do animacji rozmiaru kontenera
+let isExpanded = false;
+
 function expandContainer() {
-    container.classList.add('expanded');
+    if (!isExpanded) {
+        container.classList.add('expanded');
+        isExpanded = true;
+    }
 }
 
 // Funkcja do wysyłania zapytania do backendu
@@ -40,7 +46,7 @@ async function sendMessage(message) {
     addMessage('user', message);
     
     try {
-        const response = await fetch(API_ENDPOINT, {
+        const response = await fetch('/api/chat', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
