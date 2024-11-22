@@ -17,8 +17,8 @@ body {
 
 /* Kontener główny */
 .container {
-    width: 400px;
-    height: 40vh; /* Ustawienie wysokości kontenera na pełną wysokość widoku */
+    width: 550px;
+    height: 100vh; /* Ustawienie wysokości kontenera na pełną wysokość widoku */
     max-width: 100%;
     background-color: #ffffff;
     border-radius: 8px;
@@ -51,6 +51,7 @@ header h1 {
     background-color: #fafafa;
     font-family: 'Roboto', sans-serif; /* Czcionka Roboto */
     transition: padding 0.5s ease; /* Animacja dostosowania paddingu */
+    background-color: #f0f0f0;
 }
 
 /* Obszar inputu */

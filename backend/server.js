@@ -39,7 +39,7 @@ app.post('/api/chat', async (req, res) => {
             messages: [
                 { 
                     role: "system", 
-                    content: "You are a helpful assistant." 
+                    content: "You are a code master." 
                 },
                 { 
                     role: "user", 

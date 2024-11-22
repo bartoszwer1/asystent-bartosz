@@ -6,6 +6,16 @@ const userInput = document.getElementById('userInput');
 const conversation = document.getElementById('conversation');
 const container = document.querySelector('.container'); // Kontener główny
 
+// Funkcja do animacji rozmiaru kontenera
+let isExpanded = false;
+
+function expandContainer() {
+    if (!isExpanded) {
+        container.classList.add('expanded');
+        isExpanded = true;
+    }
+}
+
 // Funkcja do dodawania wiadomości do konwersacji
 function addMessage(sender, text) {
     const messageDiv = document.createElement('div');
@@ -23,22 +33,14 @@ function addMessage(sender, text) {
         // Dla wiadomości użytkownika wyświetl jako tekst
         textDiv.textContent = text;
     }
+
+    expandContainer(); // Wywołanie animacji po wysłaniu wiadomości
     
     messageDiv.appendChild(textDiv);
     conversation.appendChild(messageDiv);
     
     // Przewiń do dołu konwersacji
     conversation.scrollTop = conversation.scrollHeight;
-}
-
-// Funkcja do animacji rozmiaru kontenera
-let isExpanded = false;
-
-function expandContainer() {
-    if (!isExpanded) {
-        container.classList.add('expanded');
-        isExpanded = true;
-    }
 }
 
 // Funkcja do wysyłania zapytania do backendu
@@ -57,7 +59,6 @@ async function sendMessage(message) {
         const result = await response.json();
         if (response.ok) {
             addMessage('assistant', result.reply);
-            expandContainer(); // Wywołanie animacji po wysłaniu wiadomości
         } else {
             addMessage('assistant', 'Przepraszam, wystąpił błąd podczas przetwarzania Twojej prośby.');
         }
