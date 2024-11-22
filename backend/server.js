@@ -48,7 +48,8 @@ app.post('/api/chat', async (req, res) => {
             ],
         });
 
-        const assistantMessage = completion.data.choices[0].message.content.trim();
+        const assistantMessage = completion.data.choices[0].message //.content.trim();
+        
         res.json({ reply: assistantMessage });
     } catch (error) {
         console.error('Error:', error);
