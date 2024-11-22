@@ -5,10 +5,10 @@
     box-sizing: border-box;
 }
 
-/* Tło aplikacji */
+/* Import czcionki Roboto */
 body {
     background-color: #f5f5f5;
-    font-family: Arial, sans-serif;
+    font-family: 'Roboto', sans-serif; /* Zmieniona czcionka */
     height: 100vh;
     display: flex;
     justify-content: center;
@@ -18,12 +18,15 @@ body {
 /* Kontener główny */
 .container {
     width: 400px;
+    height: 100vh; /* Ustawienie wysokości kontenera na pełną wysokość widoku */
+    max-width: 100%;
     background-color: #ffffff;
     border-radius: 8px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    transition: width 0.5s ease, height 0.5s ease; /* Animacja zmiany rozmiaru */
 }
 
 /* Nagłówek */
@@ -31,19 +34,26 @@ header {
     background-color: #4A90E2;
     padding: 15px;
     text-align: center;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1; /* Upewnij się, że nagłówek jest nad innymi elementami */
 }
 
 header h1 {
     color: #ffffff;
     font-size: 1.5em;
+    font-weight: 700;
 }
 
 /* Obszar konwersacji */
 .conversation {
     flex: 1;
-    padding: 20px;
+    padding: 80px 20px 60px 20px; /* Dostosowanie paddingu, aby uwzględnić stały nagłówek i input */
     overflow-y: auto;
     background-color: #fafafa;
+    font-family: 'Roboto', sans-serif; /* Czcionka Roboto */
 }
 
 /* Wiadomości użytkownika */
@@ -59,6 +69,7 @@ header h1 {
     padding: 10px;
     border-radius: 10px;
     max-width: 80%;
+    font-size: 1em; /* Zmniejszony rozmiar czcionki */
 }
 
 /* Wiadomości Asystenta */
@@ -74,6 +85,7 @@ header h1 {
     padding: 10px;
     border-radius: 10px;
     max-width: 80%;
+    font-size: 1em; /* Zmniejszony rozmiar czcionki */
 }
 
 /* Obszar inputu */
@@ -82,6 +94,11 @@ header h1 {
     border-top: 1px solid #ddd;
     padding: 10px;
     background-color: #f9f9f9;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1; /* Upewnij się, że input jest nad konwersacją */
 }
 
 .input-area input {
@@ -89,8 +106,8 @@ header h1 {
     padding: 10px;
     border: 1px solid #ddd;
     border-radius: 4px;
-    font-family: 'Press Start 2P', cursive; /* Retro font */
-    font-size: 0.8em;
+    font-family: 'Roboto', sans-serif; /* Zmieniona czcionka */
+    font-size: 0.9em; /* Zmniejszony rozmiar czcionki */
 }
 
 .input-area button {
@@ -112,16 +129,19 @@ header h1 {
 .conversation h1, .conversation h2, .conversation h3, .conversation h4, .conversation h5, .conversation h6 {
     color: #4A90E2;
     margin-bottom: 10px;
+    font-family: 'Roboto', sans-serif; /* Czcionka Roboto */
 }
 
 /* Stylowanie pogrubionego tekstu */
 .conversation strong {
     font-weight: bold;
+    font-family: 'Roboto', sans-serif; /* Czcionka Roboto */
 }
 
 /* Stylowanie kursywy */
 .conversation em {
     font-style: italic;
+    font-family: 'Roboto', sans-serif; /* Czcionka Roboto */
 }
 
 /* Stylowanie kodu */
@@ -130,16 +150,25 @@ header h1 {
     padding: 10px;
     border-radius: 4px;
     overflow-x: auto;
+    font-family: 'Roboto', monospace; /* Czcionka monospace dla kodu */
 }
 
 .conversation code {
     background-color: #f4f4f4;
     padding: 2px 4px;
     border-radius: 4px;
+    font-family: 'Roboto', monospace; /* Czcionka monospace dla kodu */
 }
 
 /* Stylowanie list */
 .conversation ul, .conversation ol {
     margin-left: 20px;
     margin-bottom: 10px;
+    font-family: 'Roboto', sans-serif; /* Czcionka Roboto */
+}
+
+/* Animacja rozmiaru kontenera */
+.container.expanded {
+    width: 80%;
+    height: 80vh;
 }

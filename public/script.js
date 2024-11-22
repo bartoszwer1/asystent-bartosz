@@ -5,6 +5,7 @@ const API_ENDPOINT = 'http://localhost:3000/api/chat';
 const sendButton = document.getElementById('sendButton');
 const userInput = document.getElementById('userInput');
 const conversation = document.getElementById('conversation');
+const container = document.querySelector('.container'); // Dodany kontener
 
 // Funkcja do dodawania wiadomości do konwersacji
 function addMessage(sender, text) {
@@ -29,6 +30,11 @@ function addMessage(sender, text) {
     conversation.scrollTop = conversation.scrollHeight;
 }
 
+// Funkcja do animacji rozmiaru kontenera
+function expandContainer() {
+    container.classList.add('expanded');
+}
+
 // Funkcja do wysyłania zapytania do backendu
 async function sendMessage(message) {
     addMessage('user', message);
@@ -45,6 +51,7 @@ async function sendMessage(message) {
         const result = await response.json();
         if (response.ok) {
             addMessage('assistant', result.reply);
+            expandContainer(); // Wywołanie animacji po wysłaniu wiadomości
         } else {
             addMessage('assistant', 'Przepraszam, wystąpił błąd podczas przetwarzania Twojej prośby.');
         }
