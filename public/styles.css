@@ -107,3 +107,39 @@ header h1 {
 .input-area button:hover {
     background-color: #357ABD;
 }
+
+/* Stylowanie nagłówków */
+.conversation h1, .conversation h2, .conversation h3, .conversation h4, .conversation h5, .conversation h6 {
+    color: #4A90E2;
+    margin-bottom: 10px;
+}
+
+/* Stylowanie pogrubionego tekstu */
+.conversation strong {
+    font-weight: bold;
+}
+
+/* Stylowanie kursywy */
+.conversation em {
+    font-style: italic;
+}
+
+/* Stylowanie kodu */
+.conversation pre {
+    background-color: #f4f4f4;
+    padding: 10px;
+    border-radius: 4px;
+    overflow-x: auto;
+}
+
+.conversation code {
+    background-color: #f4f4f4;
+    padding: 2px 4px;
+    border-radius: 4px;
+}
+
+/* Stylowanie list */
+.conversation ul, .conversation ol {
+    margin-left: 20px;
+    margin-bottom: 10px;
+}

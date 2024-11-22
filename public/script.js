@@ -13,7 +13,14 @@ function addMessage(sender, text) {
     
     const textDiv = document.createElement('div');
     textDiv.classList.add('text');
-    textDiv.textContent = text;
+
+    if (sender === 'assistant') {
+        // Przekształć Markdown na HTML
+        textDiv.innerHTML = marked.parse(text);
+    } else {
+        // Dla wiadomości użytkownika wyświetl jako tekst
+        textDiv.textContent = text;
+    }
     
     messageDiv.appendChild(textDiv);
     conversation.appendChild(messageDiv);
