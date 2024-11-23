@@ -19,33 +19,169 @@ app.use(express.json());
 // Konfiguracja ścieżki do plików statycznych
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-app.use(express.static(path.join(__dirname, '../public')));
+const historiesDir = path.join(__dirname, 'histories');
 
+// Funkcja do tworzenia katalogu historii, jeśli nie istnieje
+async function ensureHistoriesDir() {
+    try {
+        await fs.access(historiesDir);
+    } catch (error) {
+        await fs.mkdir(historiesDir);
+    }
+}
+
+// Funkcja do generowania unikalnej nazwy historii
+function generateHistoryName() {
+    const now = new Date();
+    const datePart = now.toISOString().split('T')[0].replace(/-/g, '_'); // YYYY_MM_DD
+    return `chat_${datePart}`;
+}
+
+// Funkcja do generowania unikalnego identyfikatora historii
+async function createUniqueHistoryName() {
+    let baseName = generateHistoryName();
+    let index = 1;
+    let historyName = baseName;
+    while (true) {
+        const filePath = path.join(historiesDir, `${historyName}.json`);
+        try {
+            await fs.access(filePath);
+            // Jeśli plik istnieje, zwiększ indeks
+            historyName = `${baseName}_${index}`;
+            index++;
+        } catch (error) {
+            // Jeśli plik nie istnieje, można go użyć
+            return historyName;
+        }
+    }
+}
+
+// Funkcja do pobierania listy historii
+async function getAllHistories() {
+    try {
+        const files = await fs.readdir(historiesDir);
+        const histories = files
+            .filter(file => file.endsWith('.json'))
+            .map(file => {
+                const name = path.basename(file, '.json');
+                const parts = name.split('_');
+                const date = parts.slice(1, 4).join('-'); // Zakładając nazwę chat_YYYY_MM_DD_[index]
+                const index = parts[4] || 1;
+                return {
+                    id: name,
+                    name: `Chat ${date} ${index}`,
+                    createdAt: new Date(`${parts[1]}-${parts[2]}-${parts[3]}`).toLocaleString(),
+                };
+            });
+        return histories;
+    } catch (error) {
+        console.error('Błąd odczytu historii:', error);
+        return [];
+    }
+}
+
+// Funkcja do tworzenia nowej historii
+async function createNewHistory() {
+    const historyName = await createUniqueHistoryName();
+    const filePath = path.join(historiesDir, `${historyName}.json`);
+    const initialContent = []; // Początkowa pusta historia
+    await fs.writeFile(filePath, JSON.stringify(initialContent, null, 2));
+    return historyName;
+}
+
+// Funkcja do pobierania konkretnej historii
+async function getHistoryById(historyId) {
+    const filePath = path.join(historiesDir, `${historyId}.json`);
+    try {
+        const data = await fs.readFile(filePath, 'utf-8');
+        return JSON.parse(data);
+    } catch (error) {
+        console.error(`Błąd odczytu historii ${historyId}:`, error);
+        return null;
+    }
+}
+
+// Funkcja do zapisywania historii
+async function saveHistory(historyId, messages) {
+    const filePath = path.join(historiesDir, `${historyId}.json`);
+    try {
+        await fs.writeFile(filePath, JSON.stringify(messages, null, 2));
+    } catch (error) {
+        console.error(`Błąd zapisu historii ${historyId}:`, error);
+    }
+}
+
+// Konfiguracja OpenAI
 const openai = new OpenAI({
     apiKey: process.env['OPENAI_API_KEY']
 });
 
-// Endpoint API
+// Endpoint API: Pobieranie listy historii
+app.get('/api/histories', async (req, res) => {
+    const histories = await getAllHistories();
+    res.json({ histories });
+});
+
+// Endpoint API: Tworzenie nowej historii
+app.post('/api/histories', async (req, res) => {
+    const historyId = await createNewHistory();
+    res.json({ historyId });
+});
+
+// Endpoint API: Pobieranie konkretnej historii
+app.get('/api/histories/:id', async (req, res) => {
+    const historyId = req.params.id;
+    const history = await getHistoryById(historyId);
+    if (history) {
+        res.json({ history });
+    } else {
+        res.status(404).json({ error: 'Historia nie znaleziona.' });
+    }
+});
+
+// Endpoint API: Usuwanie wszystkich historii
+app.delete('/api/histories', async (req, res) => {
+    try {
+        const files = await fs.readdir(historiesDir);
+        const deletePromises = files.map(file => fs.unlink(path.join(historiesDir, file)));
+        await Promise.all(deletePromises);
+        res.json({ message: 'Wszystkie historie zostały usunięte.' });
+    } catch (error) {
+        console.error('Błąd usuwania historii:', error);
+        res.status(500).json({ error: 'Błąd podczas usuwania historii.' });
+    }
+});
+
+// Endpoint API: Obsługa czatu
 app.post('/api/chat', async (req, res) => {
-    const userMessage = req.body.message;
+    const { historyId, message } = req.body;
+
+    if (!historyId || !message) {
+        return res.status(400).json({ error: 'Brak historyId lub wiadomości.' });
+    }
+
+    const history = await getHistoryById(historyId);
+    if (!history) {
+        return res.status(404).json({ error: 'Historia nie znaleziona.' });
+    }
+
+    // Dodanie wiadomości użytkownika do historii
+    history.push({ role: 'user', content: message });
 
     try {
         const completion = await openai.chat.completions.create({
             model: "gpt-4o", // Poprawiona nazwa modelu
-            messages: [
-                { 
-                    role: "system", 
-                    content: "You are a code master." 
-                },
-                { 
-                    role: "user", 
-                    content: userMessage 
-                },
-            ],
+            messages: history,
         });
 
         const assistantMessage = completion.choices[0].message.content //completion.data.choices[0].message.content.trim();
         
+        // Dodanie odpowiedzi asystenta do historii
+        history.push({ role: 'assistant', content: assistantMessage });
+
+        // Zapisanie zaktualizowanej historii
+        await saveHistory(historyId, history);
+
         res.json({ reply: assistantMessage });
     } catch (error) {
         console.error('Error:', error);
@@ -53,12 +189,19 @@ app.post('/api/chat', async (req, res) => {
     }
 });
 
+// Serwowanie plików statycznych poprawnie
+app.use(express.static(path.join(__dirname, '../public')));
+
 // Obsługa wszystkich innych tras (serwowanie index.html)
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, '../public', 'index.html'));
 });
 
-// Uruchomienie serwera
-app.listen(PORT, () => {
-    console.log(`Serwer działa na porcie ${PORT}`);
+// Inicjalizacja katalogu historii i uruchomienie serwera
+ensureHistoriesDir().then(() => {
+    app.listen(PORT, () => {
+        console.log(`Serwer działa na http://localhost:${PORT}`);
+    });
+}).catch(error => {
+    console.error('Błąd podczas tworzenia katalogu historii:', error);
 });

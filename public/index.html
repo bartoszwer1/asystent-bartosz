@@ -16,6 +16,7 @@
 <body>
     <div class="container">
         <header>
+            <button id="historyButton" class="history-button">&#9776;</button> <!-- Ikona menu -->
             <h1>bartosz.</h1>
         </header>
         <div id="conversation" class="conversation">
@@ -29,6 +30,22 @@
             <button id="sendButton">Wyślij</button>
         </div>
     </div>
+
+    <!-- Boczne okno historii czatów -->
+    <div id="historySidebar" class="history-sidebar hidden">
+        <div class="history-header">
+            <h2>Historia Czatów</h2>
+            <button id="closeHistory" class="close-button">&times;</button>
+        </div>
+        <div class="history-list" id="historyList">
+            <!-- Lista historii zostanie tutaj załadowana -->
+        </div>
+        <div class="history-footer">
+            <button id="newHistoryButton" class="new-history-button">Nowy Czat</button>
+            <button id="deleteHistoriesButton" class="delete-histories-button">Usuń Historie</button>
+        </div>
+    </div>
+
     <script src="script.js"></script>
 </body>
 </html>
