@@ -4,6 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import OpenAI from "openai";
 import dotenv from 'dotenv';
+import fs from 'fs/promises';
 
 // Konfiguracja zmiennych środowiskowych
 dotenv.config();
@@ -19,11 +20,6 @@ app.use(express.json());
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 app.use(express.static(path.join(__dirname, '../public')));
-
-// Konfiguracja OpenAI
-// const configuration = new Configuration({
-//     apiKey: process.env['OPENAI_API_KEY'],
-// });
 
 const openai = new OpenAI({
     apiKey: process.env['OPENAI_API_KEY']
