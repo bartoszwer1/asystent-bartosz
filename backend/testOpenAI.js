@@ -10,17 +10,23 @@ const openai = new OpenAI({
 async function test() {
     try {
         const completion = await openai.chat.completions.create({
-            model: "gpt-4o",
+            model: "o1-mini",
             messages: [
-                { role: "system", content: "You are a helpful assistant." },
-                {
-                    role: "user",
-                    content: "Write me a 20 line of your imaginary story",
-                },
-            ],
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Wytłumacz mi dlaczego warto używać nowszych termometrów, niż tych rtęciowych?"
+                  }
+                ]
+              }
+            ]
         });
 
-        process.stdout.write(JSON.stringify(completion.choices[0].message.content.trim()));
+        console.log(completion.choices[0].message.content);
+
+        // process.stdout.write(JSON.stringify(completion.choices[0].message.content.trim()));
     } catch (error) {
         console.error('Error:', error);
     }
