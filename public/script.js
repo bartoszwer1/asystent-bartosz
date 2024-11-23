@@ -23,7 +23,7 @@ const modelOptions = document.querySelectorAll('.model-option');
 let currentHistoryId = null;
 
 // Aktualny wybrany model
-let currentModel = "gpt-4o";
+let currentModel = "gpt-4o"; // Domyślny model
 
 // Funkcja do animacji rozmiaru kontenera
 let isExpanded = false;
