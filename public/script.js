@@ -5,6 +5,7 @@ const sendButton = document.getElementById('sendButton');
 const userInput = document.getElementById('userInput');
 const conversation = document.getElementById('conversation');
 const container = document.querySelector('.container'); // Kontener główny
+const loading = document.getElementById('loading');
 
 // Funkcja do animacji rozmiaru kontenera
 let isExpanded = false;
@@ -33,8 +34,6 @@ function addMessage(sender, text) {
         // Dla wiadomości użytkownika wyświetl jako tekst
         textDiv.textContent = text;
     }
-
-    expandContainer(); // Wywołanie animacji po wysłaniu wiadomości
     
     messageDiv.appendChild(textDiv);
     conversation.appendChild(messageDiv);
@@ -46,7 +45,9 @@ function addMessage(sender, text) {
 // Funkcja do wysyłania zapytania do backendu
 async function sendMessage(message) {
     addMessage('user', message);
-    
+    expandContainer(); // Wywołanie animacji po wysłaniu wiadomości
+    loading.classList.remove('hidden'); // Pokazanie ładowania
+
     try {
         const response = await fetch('/api/chat', {
             method: 'POST',
@@ -66,6 +67,8 @@ async function sendMessage(message) {
     } catch (error) {
         console.error('Błąd:', error);
         addMessage('assistant', 'Przepraszam, wystąpił błąd podczas przetwarzania Twojej prośby.');
+    } finally {
+        loading.classList.add('hidden'); // Ukrycie ładowania
     }
 }
 
