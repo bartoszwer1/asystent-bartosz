@@ -18,6 +18,7 @@
         <header>
             <button id="historyButton" class="history-button">&#9776;</button> <!-- Ikona menu -->
             <h1>bartosz.</h1>
+            <button id="modelButton" class="model-button">Model: GPT-4o</button> <!-- Nowy przycisk modelu -->
         </header>
         <div id="conversation" class="conversation">
             <!-- Wiadomości będą tutaj wyświetlane -->
@@ -43,6 +44,26 @@
         <div class="history-footer">
             <button id="newHistoryButton" class="new-history-button">Nowy Czat</button>
             <button id="deleteHistoriesButton" class="delete-histories-button">Usuń Historie</button>
+        </div>
+    </div>
+
+    <!-- Modal wyboru modelu -->
+    <div id="modelModal" class="modal hidden">
+        <div class="modal-content">
+            <span id="closeModelModal" class="close">&times;</span>
+            <h2>Wybierz Model</h2>
+            <div class="model-option" data-model="gpt-4o">
+                <h3>GPT-4o</h3>
+                <p>Model domyślny.</p>
+            </div>
+            <div class="model-option" data-model="o1-mini">
+                <h3>o1-mini</h3>
+                <p>Dłuższy czas odpowiedzi, dobrze tłumaczy.</p>
+            </div>
+            <div class="model-option" data-model="o1-preview">
+                <h3>o1-preview</h3>
+                <p>Model eksperymentalny z nowymi funkcjami.</p>
+            </div>
         </div>
     </div>
 

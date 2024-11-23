@@ -14,8 +14,16 @@ const historyList = document.getElementById('historyList');
 const newHistoryButton = document.getElementById('newHistoryButton');
 const deleteHistoriesButton = document.getElementById('deleteHistoriesButton');
 
+const modelButton = document.getElementById('modelButton');
+const modelModal = document.getElementById('modelModal');
+const closeModelModal = document.getElementById('closeModelModal');
+const modelOptions = document.querySelectorAll('.model-option');
+
 // Aktualny wybrany historyId
 let currentHistoryId = null;
+
+// Aktualny wybrany model
+let currentModel = "gpt-4o";
 
 // Funkcja do animacji rozmiaru kontenera
 let isExpanded = false;
@@ -69,7 +77,7 @@ async function sendMessage(message) {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ historyId: currentHistoryId, message: message })
+            body: JSON.stringify({ historyId: currentHistoryId, message: message, model: currentModel })
         });
         
         const result = await response.json();
@@ -94,7 +102,7 @@ function openHistorySidebar() {
 }
 
 // Funkcja do zamykania bocznego panelu historii
-function closeHistorySidebar() {
+function closeHistorySidebarFunc() { // Zmieniono nazwę funkcji, aby uniknąć konfliktu z `closeHistoryButton`
     historySidebar.classList.remove('visible');
     historySidebar.classList.add('hidden');
 }
@@ -127,7 +135,7 @@ function displayHistories(histories) {
 
         historyItem.addEventListener('click', () => {
             selectHistory(history.id);
-            closeHistorySidebar();
+            closeHistorySidebarFunc();
         });
 
         historyList.appendChild(historyItem);
@@ -221,6 +229,43 @@ async function deleteAllHistories() {
     }
 }
 
+// Funkcja do otwierania modalu wyboru modelu
+function openModelModal() {
+    modelModal.classList.remove('hidden');
+}
+
+// Funkcja do zamykania modalu wyboru modelu
+function closeModelModalFunc() { // Zmieniono nazwę funkcji, aby uniknąć konfliktu z `closeModelModal`
+    modelModal.classList.add('hidden');
+}
+
+// Funkcja do aktualizacji przycisku modelu
+function updateModelButton() {
+    const modelName = getModelDisplayName(currentModel);
+    modelButton.textContent = `Model: ${modelName}`;
+}
+
+// Funkcja do mapowania nazwy modelu na wyświetlaną nazwę
+function getModelDisplayName(model) {
+    switch(model) {
+        case 'gpt-4o':
+            return 'GPT-4o';
+        case 'o1-mini':
+            return 'o1-mini';
+        case 'o1-preview':
+            return 'o1-preview';
+        default:
+            return 'GPT-4o';
+    }
+}
+
+// Funkcja do obsługi wyboru modelu
+function handleModelSelection(model) {
+    currentModel = model;
+    updateModelButton();
+    closeModelModalFunc();
+}
+
 // Event Listeners
 sendButton.addEventListener('click', () => {
     const message = userInput.value.trim();
@@ -241,7 +286,7 @@ historyButton.addEventListener('click', () => {
 });
 
 closeHistoryButton.addEventListener('click', () => {
-    closeHistorySidebar();
+    closeHistorySidebarFunc();
 });
 
 newHistoryButton.addEventListener('click', () => {
@@ -252,7 +297,24 @@ deleteHistoriesButton.addEventListener('click', () => {
     deleteAllHistories();
 });
 
+modelButton.addEventListener('click', () => {
+    openModelModal();
+});
+
+closeModelModal.addEventListener('click', () => {
+    closeModelModalFunc();
+});
+
+// Obsługa wyboru modelu
+modelOptions.forEach(option => {
+    option.addEventListener('click', () => {
+        const selectedModel = option.getAttribute('data-model');
+        handleModelSelection(selectedModel);
+    });
+});
+
 // Inicjalizacja po załadowaniu strony
 window.addEventListener('DOMContentLoaded', async () => {
     await loadHistories();
+    updateModelButton();
 });

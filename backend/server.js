@@ -154,7 +154,7 @@ app.delete('/api/histories', async (req, res) => {
 
 // Endpoint API: Obsługa czatu
 app.post('/api/chat', async (req, res) => {
-    const { historyId, message } = req.body;
+    const { historyId, message, model } = req.body;
 
     if (!historyId || !message) {
         return res.status(400).json({ error: 'Brak historyId lub wiadomości.' });
@@ -170,12 +170,12 @@ app.post('/api/chat', async (req, res) => {
 
     try {
         const completion = await openai.chat.completions.create({
-            model: "gpt-4o", // Poprawiona nazwa modelu
+            model: model || "gpt-4o", // Użyj wybranego modelu lub domyślnego
             messages: history,
         });
 
-        const assistantMessage = completion.choices[0].message.content //completion.data.choices[0].message.content.trim();
-        
+        const assistantMessage = completion.choices[0].message.content //.trim();
+
         // Dodanie odpowiedzi asystenta do historii
         history.push({ role: 'assistant', content: assistantMessage });
 
