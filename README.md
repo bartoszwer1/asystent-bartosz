@@ -1,6 +1,6 @@
 # Asystent bartosz.
 
-![bartosz. Logo](https://via.placeholder.com/150)
+<!-- ![bartosz. Logo](https://via.placeholder.com/150) -->
 
 bartosz. to wszechstronna aplikacja czatu zaprojektowana do ułatwienia interakcji z zaawansowanymi modelami AI. Niezależnie od tego, czy jesteś deweloperem poszukującym pomocy, czy użytkownikiem szukającym inteligentnego partnera do rozmów, bartosz. oferuje solidną i przyjazną dla użytkownika platformę, która spełni Twoje potrzeby.
 
