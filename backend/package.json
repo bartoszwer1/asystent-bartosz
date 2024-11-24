@@ -1,11 +1,12 @@
 {
     "name": "asystent-bartosz-backend",
-    "version": "1.0.0",
+    "version": "1.5.0",
     "description": "Backend dla Asystenta Bartosz",
     "type": "module",
     "main": "server.js",
     "scripts": {
-        "start": "node server.js"
+        "start": "node server.js",
+        "migrate": "node migrateHistories.js"
     },
     "dependencies": {
         "cors": "^2.8.5",

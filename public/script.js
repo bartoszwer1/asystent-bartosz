@@ -19,11 +19,32 @@ const modelModal = document.getElementById('modelModal');
 const closeModelModal = document.getElementById('closeModelModal');
 const modelOptions = document.querySelectorAll('.model-option');
 
+// Modal do zmiany nazwy historii
+const renameModal = document.createElement('div');
+renameModal.id = 'renameModal';
+renameModal.classList.add('rename-modal', 'hidden');
+renameModal.innerHTML = `
+    <div class="rename-modal-content">
+        <span class="close">&times;</span>
+        <h2>Zmiana Nazwy Historii</h2>
+        <input type="text" id="newHistoryName" placeholder="Nowa nazwa historii" />
+        <button id="saveHistoryName">Zapisz</button>
+    </div>
+`;
+document.body.appendChild(renameModal);
+
+const closeRenameModalButton = renameModal.querySelector('.close');
+const saveHistoryNameButton = document.getElementById('saveHistoryName');
+const newHistoryNameInput = document.getElementById('newHistoryName');
+
 // Aktualny wybrany historyId
 let currentHistoryId = null;
 
 // Aktualny wybrany model
 let currentModel = "gpt-4o"; // Domyślny model
+
+// Przechowywanie ID historii, którą zmieniamy nazwę
+let historyIdToRename = null;
 
 // Funkcja do animacji rozmiaru kontenera
 let isExpanded = false;
@@ -39,6 +60,9 @@ expandContainer(); // Wywołanie animacji po wysłaniu wiadomości
 
 // Funkcja do dodawania wiadomości do konwersacji
 function addMessage(sender, text) {
+    // Ignoruj wiadomości z rolą 'system'
+    if (sender === 'system') return;
+
     const messageDiv = document.createElement('div');
     messageDiv.classList.add('message', sender);
     
@@ -127,7 +151,10 @@ function displayHistories(histories) {
     histories.forEach(history => {
         const historyItem = document.createElement('div');
         historyItem.classList.add('history-item');
-        historyItem.textContent = `${history.name} (${history.createdAt})`;
+        historyItem.innerHTML = `
+            <span class="history-name">${history.name} (${history.createdAt})</span>
+            <button class="rename-button">Rename</button>
+        `;
         historyItem.dataset.historyId = history.id;
 
         // Dodanie klasy 'active' jeśli to aktualnie wybrana historia
@@ -135,9 +162,15 @@ function displayHistories(histories) {
             historyItem.classList.add('active');
         }
 
-        historyItem.addEventListener('click', () => {
+        // Obsługa kliknięcia na nazwę historii
+        historyItem.querySelector('.history-name').addEventListener('click', () => {
             selectHistory(history.id);
             closeHistorySidebarFunc();
+        });
+
+        // Obsługa kliknięcia na przycisk "Rename"
+        historyItem.querySelector('.rename-button').addEventListener('click', () => {
+            openRenameModal(history.id, history.name);
         });
 
         historyList.appendChild(historyItem);
@@ -171,8 +204,11 @@ async function loadConversation(historyId) {
         const response = await fetch(`/api/histories/${historyId}`);
         const data = await response.json();
         if (response.ok) {
-            data.history.forEach(msg => {
-                addMessage(msg.role, msg.content);
+            data.history.messages.forEach(msg => {
+                // Wyświetlaj tylko wiadomości z rolami 'user' i 'assistant'
+                if (msg.role === 'user' || msg.role === 'assistant') {
+                    addMessage(msg.role, msg.content);
+                }
             });
         } else {
             console.error('Błąd podczas ładowania historii:', data.error);
@@ -184,12 +220,16 @@ async function loadConversation(historyId) {
 
 // Funkcja do tworzenia nowej historii
 async function createNewHistory() {
+    const newName = prompt('Podaj nazwę nowej historii:', `Chat ${new Date().toISOString().split('T')[0]}`);
+    if (newName === null) return; // Anulowano
+
     try {
         const response = await fetch('/api/histories', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
-            }
+            },
+            body: JSON.stringify({ name: newName })
         });
         const data = await response.json();
         if (response.ok) {
@@ -268,6 +308,50 @@ function handleModelSelection(model) {
     closeModelModalFunc();
 }
 
+// Funkcja do otwierania modalu renamingu
+function openRenameModal(historyId, currentName) {
+    historyIdToRename = historyId;
+    newHistoryNameInput.value = currentName;
+    renameModal.classList.remove('hidden');
+    newHistoryNameInput.focus();
+}
+
+// Funkcja do zamykania modalu renamingu
+function closeRenameModalFunc() {
+    renameModal.classList.add('hidden');
+    historyIdToRename = null;
+}
+
+// Funkcja do zapisania nowej nazwy historii
+async function saveHistoryName() {
+    const newName = newHistoryNameInput.value.trim();
+    if (newName === '') {
+        alert('Nazwa nie może być pusta.');
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/histories/${historyIdToRename}/rename`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ newName: newName })
+        });
+        const data = await response.json();
+        if (response.ok) {
+            alert('Nazwa historii została zmieniona.');
+            loadHistories();
+            closeRenameModalFunc();
+        } else {
+            alert(`Błąd: ${data.error}`);
+        }
+    } catch (error) {
+        console.error('Błąd:', error);
+        alert('Wystąpił błąd podczas zmiany nazwy historii.');
+    }
+}
+
 // Event Listeners
 sendButton.addEventListener('click', () => {
     const message = userInput.value.trim();
@@ -313,6 +397,23 @@ modelOptions.forEach(option => {
         const selectedModel = option.getAttribute('data-model');
         handleModelSelection(selectedModel);
     });
+});
+
+// Obsługa zamknięcia modalu renamingu
+closeRenameModalButton.addEventListener('click', () => {
+    closeRenameModalFunc();
+});
+
+// Obsługa zapisywania nowej nazwy historii
+saveHistoryNameButton.addEventListener('click', () => {
+    saveHistoryName();
+});
+
+// Zamknięcie modalu po kliknięciu poza jego zawartością
+renameModal.addEventListener('click', (e) => {
+    if (e.target === renameModal) {
+        closeRenameModalFunc();
+    }
 });
 
 // Inicjalizacja po załadowaniu strony

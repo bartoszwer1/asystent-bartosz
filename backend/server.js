@@ -62,19 +62,19 @@ async function createUniqueHistoryName() {
 async function getAllHistories() {
     try {
         const files = await fs.readdir(historiesDir);
-        const histories = files
-            .filter(file => file.endsWith('.json'))
-            .map(file => {
-                const name = path.basename(file, '.json');
-                const parts = name.split('_');
-                const date = parts.slice(1, 4).join('-'); // Zakładając nazwę chat_YYYY_MM_DD_[index]
-                const index = parts[4] || 1;
-                return {
-                    id: name,
-                    name: `Chat ${date} ${index}`,
-                    createdAt: new Date(`${parts[1]}-${parts[2]}-${parts[3]}`).toLocaleString(),
-                };
-            });
+        const histories = [];
+        for (const file of files) {
+            if (file.endsWith('.json')) {
+                const filePath = path.join(historiesDir, file);
+                const data = await fs.readFile(filePath, 'utf-8');
+                const history = JSON.parse(data);
+                histories.push({
+                    id: path.basename(file, '.json'),
+                    name: history.name || `Chat ${path.basename(file, '.json')}`,
+                    createdAt: new Date(history.createdAt).toLocaleString(),
+                });
+            }
+        }
         return histories;
     } catch (error) {
         console.error('Błąd odczytu historii:', error);
@@ -83,10 +83,20 @@ async function getAllHistories() {
 }
 
 // Funkcja do tworzenia nowej historii
-async function createNewHistory() {
+async function createNewHistory(name = null) {
     const historyName = await createUniqueHistoryName();
     const filePath = path.join(historiesDir, `${historyName}.json`);
-    const initialContent = []; // Początkowa pusta historia
+    const now = new Date().toISOString();
+    const initialContent = {
+        name: name || `Chat ${now.split('T')[0]}`,
+        createdAt: now,
+        messages: [
+            {
+                role: 'system',
+                content: 'Masz na imię bartosz. i jesteś asystentem opartyn o sztyczną inteligencję. Jesteś specjalista w programowaniu.'
+            }
+        ]
+    };
     await fs.writeFile(filePath, JSON.stringify(initialContent, null, 2));
     return historyName;
 }
@@ -104,10 +114,10 @@ async function getHistoryById(historyId) {
 }
 
 // Funkcja do zapisywania historii
-async function saveHistory(historyId, messages) {
+async function saveHistory(historyId, historyData) {
     const filePath = path.join(historiesDir, `${historyId}.json`);
     try {
-        await fs.writeFile(filePath, JSON.stringify(messages, null, 2));
+        await fs.writeFile(filePath, JSON.stringify(historyData, null, 2));
     } catch (error) {
         console.error(`Błąd zapisu historii ${historyId}:`, error);
     }
@@ -126,7 +136,8 @@ app.get('/api/histories', async (req, res) => {
 
 // Endpoint API: Tworzenie nowej historii
 app.post('/api/histories', async (req, res) => {
-    const historyId = await createNewHistory();
+    const { name } = req.body;
+    const historyId = await createNewHistory(name);
     res.json({ historyId });
 });
 
@@ -135,7 +146,9 @@ app.get('/api/histories/:id', async (req, res) => {
     const historyId = req.params.id;
     const history = await getHistoryById(historyId);
     if (history) {
-        res.json({ history });
+        // Filtrujemy wiadomości, aby wykluczyć te z rolą 'system'
+        const filteredMessages = history.messages.filter(msg => msg.role !== 'system');
+        res.json({ history: { ...history, messages: filteredMessages } });
     } else {
         res.status(404).json({ error: 'Historia nie znaleziona.' });
     }
@@ -154,6 +167,25 @@ app.delete('/api/histories', async (req, res) => {
     }
 });
 
+// Endpoint API: Zmiana nazwy historii
+app.put('/api/histories/:id/rename', async (req, res) => {
+    const historyId = req.params.id;
+    const { newName } = req.body;
+
+    if (!newName) {
+        return res.status(400).json({ error: 'Brak nowej nazwy.' });
+    }
+
+    const history = await getHistoryById(historyId);
+    if (!history) {
+        return res.status(404).json({ error: 'Historia nie znaleziona.' });
+    }
+
+    history.name = newName;
+    await saveHistory(historyId, history);
+    res.json({ message: 'Nazwa historii została zmieniona.', name: newName });
+});
+
 // Endpoint API: Obsługa czatu
 app.post('/api/chat', async (req, res) => {
     const { historyId, message, model } = req.body;
@@ -168,18 +200,26 @@ app.post('/api/chat', async (req, res) => {
     }
 
     // Dodanie wiadomości użytkownika do historii
-    history.push({ role: 'user', content: message });
+    history.messages.push({ role: 'user', content: message });
+
+    // Sprawdzenie, czy pierwsza wiadomość jest rolą systemową
+    if (history.messages.length === 1 || history.messages[0].role !== 'system') {
+        history.messages.unshift({
+            role: 'system',
+            content: 'Masz na imię bartosz. i jesteś asystentem opartyn o sztyczną inteligencję. Jesteś specjalista w programowaniu.'
+        });
+    }
 
     try {
         const completion = await openai.chat.completions.create({
             model: model || "gpt-4o", // Użyj wybranego modelu lub domyślnego
-            messages: history,
+            messages: history.messages,
         });
 
-        const assistantMessage = completion.choices[0].message.content //.trim();
+        const assistantMessage = completion.choices[0].message.content.trim();
 
         // Dodanie odpowiedzi asystenta do historii
-        history.push({ role: 'assistant', content: assistantMessage });
+        history.messages.push({ role: 'assistant', content: assistantMessage });
 
         // Zapisanie zaktualizowanej historii
         await saveHistory(historyId, history);
