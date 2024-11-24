@@ -35,6 +35,8 @@ function expandContainer() {
     }
 }
 
+expandContainer(); // Wywołanie animacji po wysłaniu wiadomości
+
 // Funkcja do dodawania wiadomości do konwersacji
 function addMessage(sender, text) {
     const messageDiv = document.createElement('div');
@@ -68,7 +70,7 @@ async function sendMessage(message) {
     }
 
     addMessage('user', message);
-    expandContainer(); // Wywołanie animacji po wysłaniu wiadomości
+    
     loading.classList.remove('hidden'); // Pokazanie ładowania
 
     try {
