@@ -11,8 +11,9 @@ async function test() {
     try {
         const response = await openai.images.generate({
             model: "dall-e-3",
-            prompt: "a cute pug swinging his head as he runs",
+            prompt: "Cute dragon visiting Krakow as a tourist. Dragon has typical tourist equipment. Dragon is standing on Main Square and there is Mariacki Church in the background",
             n: 1,
+            quality: "hd",
             size: "1024x1024",
           });
 
