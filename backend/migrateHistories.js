@@ -17,20 +17,17 @@ async function migrateHistories() {
                 const data = await fs.readFile(filePath, 'utf-8');
                 const history = JSON.parse(data);
                 
-                // Sprawdź, czy plik już ma wiadomość systemową
+                // Sprawdź, czy plik ma wiadomości z rolą 'system'
                 if (history.messages && history.messages.length > 0 && history.messages[0].role === 'system') {
-                    console.log(`Historia ${file} już zawiera wiadomość systemową. Pomijanie.`);
-                    continue;
+                    console.log(`Historia ${file} zawiera wiadomość systemową. Usuwanie.`);
+                    // Usuwanie wiadomości systemowej
+                    history.messages = history.messages.filter(msg => msg.role !== 'system');
+                    
+                    await fs.writeFile(filePath, JSON.stringify(history, null, 2));
+                    console.log(`Usunięto wiadomość systemową z historii ${file}.`);
+                } else {
+                    console.log(`Historia ${file} nie zawiera wiadomości systemowej. Pomijanie.`);
                 }
-
-                // Dodanie wiadomości systemowej
-                history.messages.unshift({
-                    role: 'system',
-                    content: 'Masz na imię bartosz. i jesteś asystentem opartyn o sztyczną inteligencję. Jesteś specjalista w programowaniu.'
-                });
-
-                await fs.writeFile(filePath, JSON.stringify(history, null, 2));
-                console.log(`Migracja historii ${file} zakończona.`);
             }
         }
         console.log('Migracja wszystkich historii zakończona.');

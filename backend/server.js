@@ -82,7 +82,7 @@ async function getAllHistories() {
     }
 }
 
-// Funkcja do tworzenia nowej historii
+// Funkcja do tworzenia nowej historii bez wiadomości systemowej
 async function createNewHistory(name = null) {
     const historyName = await createUniqueHistoryName();
     const filePath = path.join(historiesDir, `${historyName}.json`);
@@ -90,12 +90,7 @@ async function createNewHistory(name = null) {
     const initialContent = {
         name: name || `Chat ${now.split('T')[0]}`,
         createdAt: now,
-        messages: [
-            {
-                role: 'system',
-                content: 'Masz na imię bartosz. i jesteś asystentem opartyn o sztyczną inteligencję. Jesteś specjalista w programowaniu.'
-            }
-        ]
+        messages: [] // Brak wiadomości systemowej
     };
     await fs.writeFile(filePath, JSON.stringify(initialContent, null, 2));
     return historyName;
@@ -141,12 +136,12 @@ app.post('/api/histories', async (req, res) => {
     res.json({ historyId });
 });
 
-// Endpoint API: Pobieranie konkretnej historii
+// Endpoint API: Pobieranie konkretnej historii bez wiadomości systemowych (nie ma systemowych)
 app.get('/api/histories/:id', async (req, res) => {
     const historyId = req.params.id;
     const history = await getHistoryById(historyId);
     if (history) {
-        // Filtrujemy wiadomości, aby wykluczyć te z rolą 'system'
+        // Filtrujemy wiadomości, aby wykluczyć te z rolą 'system' (brak)
         const filteredMessages = history.messages.filter(msg => msg.role !== 'system');
         res.json({ history: { ...history, messages: filteredMessages } });
     } else {
@@ -202,18 +197,24 @@ app.post('/api/chat', async (req, res) => {
     // Dodanie wiadomości użytkownika do historii
     history.messages.push({ role: 'user', content: message });
 
-    // Sprawdzenie, czy pierwsza wiadomość jest rolą systemową
-    if (history.messages.length === 1 || history.messages[0].role !== 'system') {
-        history.messages.unshift({
-            role: 'system',
-            content: 'Masz na imię bartosz. i jesteś asystentem opartyn o sztyczną inteligencję. Jesteś specjalista w programowaniu.'
-        });
+    // Przygotowanie wiadomości do wysłania do OpenAI
+    let messagesForAI = [...history.messages];
+
+    // Dodanie instrukcji tylko dla modelu 'gpt-4o'
+    if (model === 'gpt-4o') {
+        messagesForAI = [
+            {
+                role: 'system',
+                content: 'Masz na imię bartosz i jesteś sztuczną inteligencją. Jesteś specjalistą w programowaniu.'
+            },
+            ...messagesForAI
+        ];
     }
 
     try {
         const completion = await openai.chat.completions.create({
             model: model || "gpt-4o", // Użyj wybranego modelu lub domyślnego
-            messages: history.messages,
+            messages: messagesForAI,
         });
 
         const assistantMessage = completion.choices[0].message.content.trim();
