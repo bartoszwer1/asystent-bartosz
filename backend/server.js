@@ -183,10 +183,10 @@ app.put('/api/histories/:id/rename', async (req, res) => {
 
 // Endpoint API: Obsługa czatu i generowania obrazów
 app.post('/api/chat', async (req, res) => {
-    const { historyId, message, model } = req.body;
+    const { historyId, message, model, resolution, quality, style, n } = req.body;
 
-    if (!historyId || !message) {
-        return res.status(400).json({ error: 'Brak historyId lub wiadomości.' });
+    if (!historyId || !message || !model) {
+        return res.status(400).json({ error: 'Brak historyId, modelu lub wiadomości.' });
     }
 
     const history = await getHistoryById(historyId);
@@ -197,25 +197,51 @@ app.post('/api/chat', async (req, res) => {
     if (model === 'dall-e-2' || model === 'dall-e-3') {
         // Obsługa generowania obrazów
         try {
-            const response = await openai.images.generate({
+            const generateOptions = {
                 model: model,
                 prompt: message,
-                n: 1,
-                size: "1024x1024",
-                quality: model === 'dall-e-3' ? "hd" : undefined, // Opcjonalny parametr quality dla DALL-E 3
-            });
-            const image_url = response.data[0].url;
+                size: resolution || "1024x1024",
+                style: style || "vivid",
+                quality: quality || (model === 'dall-e-3' ? "hd" : undefined)
+            };
 
-            // Dodanie wiadomości użytkownika
-            history.messages.push({ role: 'user', content: message });
+            if (model === 'dall-e-2') {
+                generateOptions.n = n && n <= 5 ? n : 1;
+            } else if (model === 'dall-e-3') {
+                generateOptions.n = 1;
+            }
 
-            // Dodanie wiadomości asystenta z URL obrazu
-            history.messages.push({ role: 'assistant', content: image_url });
+            const response = await openai.images.generate(generateOptions);
 
-            // Zapisanie zaktualizowanej historii
-            await saveHistory(historyId, history);
+            if (model === 'dall-e-2') {
+                const image_urls = response.data.map(img => img.url);
+                // Dodanie wiadomości użytkownika
+                history.messages.push({ role: 'user', content: message });
 
-            res.json({ image_url });
+                // Dodanie wiadomości asystenta z URL obrazów
+                image_urls.forEach(url => {
+                    history.messages.push({ role: 'assistant', content: url });
+                });
+
+                // Zapisanie zaktualizowanej historii
+                await saveHistory(historyId, history);
+
+                res.json({ image_urls });
+            } else if (model === 'dall-e-3') {
+                const image_url = response.data[0].url;
+
+                // Dodanie wiadomości użytkownika
+                history.messages.push({ role: 'user', content: message });
+
+                // Dodanie wiadomości asystenta z URL obrazu
+                history.messages.push({ role: 'assistant', content: image_url });
+
+                // Zapisanie zaktualizowanej historii
+                await saveHistory(historyId, history);
+
+                res.json({ image_url });
+            }
+
         } catch (error) {
             console.error('Error generating image:', error);
             res.status(500).json({ error: 'Wystąpił błąd podczas generowania obrazu.' });

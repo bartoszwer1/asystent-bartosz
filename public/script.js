@@ -19,6 +19,9 @@ const modelModal = document.getElementById('modelModal');
 const closeModelModal = document.getElementById('closeModelModal');
 const modelOptions = document.querySelectorAll('.model-option');
 
+// Kontener dla parametrów generowania obrazów
+const imageParameters = document.getElementById('imageParameters');
+
 // Modal do zmiany nazwy historii
 const renameModal = document.createElement('div');
 renameModal.id = 'renameModal';
@@ -45,6 +48,14 @@ let currentModel = "gpt-4o"; // Domyślny model
 
 // Przechowywanie ID historii, którą zmieniamy nazwę
 let historyIdToRename = null;
+
+// Przechowywanie wybranych parametrów dla DALL-E
+let imageParametersSelected = {
+    resolution: "1024x1024",
+    quality: "standard",
+    style: "vivid",
+    n: 1, // Dla DALL-E 3
+};
 
 // Funkcja do animacji rozmiaru kontenera
 let isExpanded = false;
@@ -104,19 +115,44 @@ async function sendMessage(message) {
 
     loading.classList.remove('hidden'); // Pokazanie ładowania
 
+    // Przygotowanie danych do wysłania
+    const payload = {
+        historyId: currentHistoryId,
+        message: message,
+        model: currentModel
+    };
+
+    // Dodanie dodatkowych parametrów dla DALL-E
+    if (currentModel === 'dall-e-2' || currentModel === 'dall-e-3') {
+        payload.resolution = imageParametersSelected.resolution;
+        payload.quality = imageParametersSelected.quality;
+        payload.style = imageParametersSelected.style;
+        if (currentModel === 'dall-e-2') {
+            payload.n = imageParametersSelected.n;
+        }
+    }
+
     try {
         const response = await fetch('/api/chat', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ historyId: currentHistoryId, message: message, model: currentModel })
+            body: JSON.stringify(payload)
         });
 
         const result = await response.json();
         if (response.ok) {
             if (currentModel === 'dall-e-2' || currentModel === 'dall-e-3') {
-                addMessage('assistant', result.image_url, true);
+                if (currentModel === 'dall-e-2') {
+                    // DALL-E 2 może generować wiele obrazów
+                    result.image_urls.forEach(url => {
+                        addMessage('assistant', url, true);
+                    });
+                } else {
+                    // DALL-E 3 generuje tylko jeden obraz
+                    addMessage('assistant', result.image_url, true);
+                }
             } else {
                 addMessage('assistant', result.reply);
             }
@@ -325,6 +361,7 @@ function handleModelSelection(model) {
     currentModel = model;
     updateModelButton();
     closeModelModalFunc();
+    updateImageParametersUI();
 }
 
 // Funkcja do otwierania modalu renamingu
@@ -368,6 +405,136 @@ async function saveHistoryName() {
     } catch (error) {
         console.error('Błąd:', error);
         alert('Wystąpił błąd podczas zmiany nazwy historii.');
+    }
+}
+
+// Funkcja do aktualizacji UI parametrów obrazu
+function updateImageParametersUI() {
+    // Czyścimy aktualne parametry
+    imageParameters.innerHTML = '';
+
+    if (currentModel === 'dall-e-2' || currentModel === 'dall-e-3') {
+        imageParameters.classList.remove('hidden');
+
+        // Opcje rozdzielczości
+        const resolutionLabel = document.createElement('label');
+        resolutionLabel.textContent = 'Rozdzielczość:';
+        resolutionLabel.classList.add('parameter-label');
+
+        const resolutionSelect = document.createElement('select');
+        resolutionSelect.id = 'resolutionSelect';
+        resolutionSelect.classList.add('parameter-select');
+
+        let resolutions = [];
+        if (currentModel === 'dall-e-3') {
+            resolutions = ['1024x1024', '1024x1792', '1792x1024'];
+        } else if (currentModel === 'dall-e-2') {
+            resolutions = ['1024x1024', '512x512', '256x256'];
+        }
+
+        resolutions.forEach(res => {
+            const option = document.createElement('option');
+            option.value = res;
+            option.textContent = res;
+            if (res === imageParametersSelected.resolution) {
+                option.selected = true;
+            }
+            resolutionSelect.appendChild(option);
+        });
+
+        imageParameters.appendChild(resolutionLabel);
+        imageParameters.appendChild(resolutionSelect);
+
+        // Opcje jakości
+        const qualityLabel = document.createElement('label');
+        qualityLabel.textContent = 'Jakość:';
+        qualityLabel.classList.add('parameter-label');
+
+        const qualitySelect = document.createElement('select');
+        qualitySelect.id = 'qualitySelect';
+        qualitySelect.classList.add('parameter-select');
+
+        const qualities = ['standard', 'hd'];
+        qualities.forEach(q => {
+            const option = document.createElement('option');
+            option.value = q;
+            option.textContent = q.toUpperCase();
+            if (q === imageParametersSelected.quality) {
+                option.selected = true;
+            }
+            qualitySelect.appendChild(option);
+        });
+
+        imageParameters.appendChild(qualityLabel);
+        imageParameters.appendChild(qualitySelect);
+
+        // Opcje stylu
+        const styleLabel = document.createElement('label');
+        styleLabel.textContent = 'Styl:';
+        styleLabel.classList.add('parameter-label');
+
+        const styleSelect = document.createElement('select');
+        styleSelect.id = 'styleSelect';
+        styleSelect.classList.add('parameter-select');
+
+        const styles = ['vivid', 'natural'];
+        styles.forEach(s => {
+            const option = document.createElement('option');
+            option.value = s;
+            option.textContent = s.charAt(0).toUpperCase() + s.slice(1);
+            if (s === imageParametersSelected.style) {
+                option.selected = true;
+            }
+            styleSelect.appendChild(option);
+        });
+
+        imageParameters.appendChild(styleLabel);
+        imageParameters.appendChild(styleSelect);
+
+        if (currentModel === 'dall-e-2') {
+            // Opcje ilości obrazów
+            const numberLabel = document.createElement('label');
+            numberLabel.textContent = 'Ilość obrazów:';
+            numberLabel.classList.add('parameter-label');
+
+            const numberInput = document.createElement('input');
+            numberInput.type = 'number';
+            numberInput.id = 'numberInput';
+            numberInput.min = 1;
+            numberInput.max = 5;
+            numberInput.value = imageParametersSelected.n;
+            numberInput.classList.add('parameter-input');
+
+            imageParameters.appendChild(numberLabel);
+            imageParameters.appendChild(numberInput);
+
+            // Obsługa zmiany ilości obrazów
+            numberInput.addEventListener('change', (e) => {
+                let value = parseInt(e.target.value);
+                if (isNaN(value) || value < 1) value = 1;
+                if (value > 5) value = 5;
+                e.target.value = value;
+                imageParametersSelected.n = value;
+            });
+        }
+
+        // Obsługa zmiany rozdzielczości
+        resolutionSelect.addEventListener('change', (e) => {
+            imageParametersSelected.resolution = e.target.value;
+        });
+
+        // Obsługa zmiany jakości
+        qualitySelect.addEventListener('change', (e) => {
+            imageParametersSelected.quality = e.target.value;
+        });
+
+        // Obsługa zmiany stylu
+        styleSelect.addEventListener('change', (e) => {
+            imageParametersSelected.style = e.target.value;
+        });
+
+    } else {
+        imageParameters.classList.add('hidden');
     }
 }
 
@@ -439,4 +606,5 @@ renameModal.addEventListener('click', (e) => {
 window.addEventListener('DOMContentLoaded', async () => {
     await loadHistories();
     updateModelButton();
+    updateImageParametersUI();
 });
