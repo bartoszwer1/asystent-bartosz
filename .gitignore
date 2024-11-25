@@ -3,3 +3,6 @@ node_modules/
 *.log
 .DS_Store
 histories/
+prompt_images/
+testDALL-E.js
+testOpenAI.js

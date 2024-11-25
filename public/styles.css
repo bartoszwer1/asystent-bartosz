@@ -388,6 +388,8 @@ header h1 {
     max-width: 400px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.5);
     position: relative;
+    overflow: scroll;
+    max-height: 90%;
 }
 
 .modal-content h2 {
@@ -453,7 +455,7 @@ header h1 {
     background-color: #e6b800; /* Ciemniejszy żółty przy najechaniu */
 }
 
-/* Modal do zmiany nazwy historii */
+/* Stylowanie modalu do zmiany nazwy historii */
 .rename-modal {
     position: fixed;
     top: 0;
@@ -526,6 +528,7 @@ header h1 {
     color: #ffffff; /* Biały kolor przycisku zamknięcia przy najechaniu */
 }
 
+/* Stylowanie wygenerowanych obrazów */
 .generated-image {
     max-width: 100%;
     height: auto;
@@ -542,15 +545,12 @@ header h1 {
 }
 
 .parameter-label {
-    /* display: block; */
     margin-bottom: 5px;
     color: #ffcc00; /* Żółty kolor etykiet */
-    /* font-weight: bold; */
     font-family: 'Roboto', sans-serif;
 }
 
 .parameter-select, .parameter-input {
-    /* width: 100%; */
     padding: 8px;
     margin-right: 10px;
     margin-left: 10px;

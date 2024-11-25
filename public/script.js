@@ -37,8 +37,8 @@ renameModal.innerHTML = `
 document.body.appendChild(renameModal);
 
 const closeRenameModalButton = renameModal.querySelector('.close');
-const saveHistoryNameButton = document.getElementById('saveHistoryName');
-const newHistoryNameInput = document.getElementById('newHistoryName');
+const saveHistoryNameButton = renameModal.querySelector('#saveHistoryName');
+const newHistoryNameInput = renameModal.querySelector('#newHistoryName');
 
 // Aktualny wybrany historyId
 let currentHistoryId = null;
@@ -80,7 +80,7 @@ function addMessage(sender, text, isImage = false) {
     const textDiv = document.createElement('div');
     textDiv.classList.add('text');
 
-    if (sender === 'assistant' && isImage) {
+    if (isImage) {
         // Wyświetlanie obrazu
         const img = document.createElement('img');
         img.src = text;
@@ -199,7 +199,7 @@ function displayHistories(histories) {
         const historyItem = document.createElement('div');
         historyItem.classList.add('history-item');
         historyItem.innerHTML = `
-            <span class="history-name">${history.name} (${history.createdAt})</span>
+            <span class="history-name">${history.name} (${new Date(history.createdAt).toLocaleDateString()})</span>
             <button class="rename-button">Rename</button>
         `;
         historyItem.dataset.historyId = history.id;
