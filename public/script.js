@@ -59,17 +59,24 @@ function expandContainer() {
 expandContainer(); // Wywołanie animacji po wysłaniu wiadomości
 
 // Funkcja do dodawania wiadomości do konwersacji
-function addMessage(sender, text) {
+function addMessage(sender, text, isImage = false) {
     // Ignoruj wiadomości z rolą 'system'
     if (sender === 'system') return;
 
     const messageDiv = document.createElement('div');
     messageDiv.classList.add('message', sender);
-    
+
     const textDiv = document.createElement('div');
     textDiv.classList.add('text');
 
-    if (sender === 'assistant') {
+    if (sender === 'assistant' && isImage) {
+        // Wyświetlanie obrazu
+        const img = document.createElement('img');
+        img.src = text;
+        img.alt = 'Generated Image';
+        img.classList.add('generated-image');
+        textDiv.appendChild(img);
+    } else if (sender === 'assistant') {
         // Przekształć Markdown na HTML i oczyść
         const dirtyHTML = marked.parse(text);
         const cleanHTML = DOMPurify.sanitize(dirtyHTML);
@@ -78,10 +85,10 @@ function addMessage(sender, text) {
         // Dla wiadomości użytkownika wyświetl jako tekst
         textDiv.textContent = text;
     }
-    
+
     messageDiv.appendChild(textDiv);
     conversation.appendChild(messageDiv);
-    
+
     // Przewiń do dołu konwersacji
     conversation.scrollTop = conversation.scrollHeight;
 }
@@ -94,7 +101,7 @@ async function sendMessage(message) {
     }
 
     addMessage('user', message);
-    
+
     loading.classList.remove('hidden'); // Pokazanie ładowania
 
     try {
@@ -105,14 +112,18 @@ async function sendMessage(message) {
             },
             body: JSON.stringify({ historyId: currentHistoryId, message: message, model: currentModel })
         });
-        
+
         const result = await response.json();
         if (response.ok) {
-            addMessage('assistant', result.reply);
+            if (currentModel === 'dall-e-2' || currentModel === 'dall-e-3') {
+                addMessage('assistant', result.image_url, true);
+            } else {
+                addMessage('assistant', result.reply);
+            }
         } else {
             addMessage('assistant', 'Przepraszam, wystąpił błąd podczas przetwarzania Twojej prośby.');
         }
-        
+
     } catch (error) {
         console.error('Błąd:', error);
         addMessage('assistant', 'Przepraszam, wystąpił błąd podczas przetwarzania Twojej prośby.');
@@ -207,7 +218,11 @@ async function loadConversation(historyId) {
             data.history.messages.forEach(msg => {
                 // Wyświetlaj tylko wiadomości z rolami 'user' i 'assistant'
                 if (msg.role === 'user' || msg.role === 'assistant') {
-                    addMessage(msg.role, msg.content);
+                    if (msg.role === 'assistant' && (currentModel === 'dall-e-2' || currentModel === 'dall-e-3')) {
+                        addMessage(msg.role, msg.content, true);
+                    } else {
+                        addMessage(msg.role, msg.content);
+                    }
                 }
             });
         } else {
@@ -296,6 +311,10 @@ function getModelDisplayName(model) {
             return 'o1-mini';
         case 'o1-preview':
             return 'o1-preview';
+        case 'dall-e-2':
+            return 'DALL-E 2';
+        case 'dall-e-3':
+            return 'DALL-E 3';
         default:
             return 'GPT-4o';
     }

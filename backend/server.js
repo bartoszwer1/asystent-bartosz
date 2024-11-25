@@ -181,7 +181,7 @@ app.put('/api/histories/:id/rename', async (req, res) => {
     res.json({ message: 'Nazwa historii została zmieniona.', name: newName });
 });
 
-// Endpoint API: Obsługa czatu
+// Endpoint API: Obsługa czatu i generowania obrazów
 app.post('/api/chat', async (req, res) => {
     const { historyId, message, model } = req.body;
 
@@ -194,41 +194,70 @@ app.post('/api/chat', async (req, res) => {
         return res.status(404).json({ error: 'Historia nie znaleziona.' });
     }
 
-    // Dodanie wiadomości użytkownika do historii
-    history.messages.push({ role: 'user', content: message });
+    if (model === 'dall-e-2' || model === 'dall-e-3') {
+        // Obsługa generowania obrazów
+        try {
+            const response = await openai.images.generate({
+                model: model,
+                prompt: message,
+                n: 1,
+                size: "1024x1024",
+                quality: model === 'dall-e-3' ? "hd" : undefined, // Opcjonalny parametr quality dla DALL-E 3
+            });
+            const image_url = response.data[0].url;
 
-    // Przygotowanie wiadomości do wysłania do OpenAI
-    let messagesForAI = [...history.messages];
+            // Dodanie wiadomości użytkownika
+            history.messages.push({ role: 'user', content: message });
 
-    // Dodanie instrukcji tylko dla modelu 'gpt-4o'
-    if (model === 'gpt-4o') {
-        messagesForAI = [
-            {
-                role: 'system',
-                content: 'Masz na imię bartosz i jesteś sztuczną inteligencją. Jesteś specjalistą w programowaniu.'
-            },
-            ...messagesForAI
-        ];
-    }
+            // Dodanie wiadomości asystenta z URL obrazu
+            history.messages.push({ role: 'assistant', content: image_url });
 
-    try {
-        const completion = await openai.chat.completions.create({
-            model: model || "gpt-4o", // Użyj wybranego modelu lub domyślnego
-            messages: messagesForAI,
-        });
+            // Zapisanie zaktualizowanej historii
+            await saveHistory(historyId, history);
 
-        const assistantMessage = completion.choices[0].message.content.trim();
+            res.json({ image_url });
+        } catch (error) {
+            console.error('Error generating image:', error);
+            res.status(500).json({ error: 'Wystąpił błąd podczas generowania obrazu.' });
+        }
+    } else {
+        // Obsługa czatu
+        // Dodanie wiadomości użytkownika do historii
+        history.messages.push({ role: 'user', content: message });
 
-        // Dodanie odpowiedzi asystenta do historii
-        history.messages.push({ role: 'assistant', content: assistantMessage });
+        // Przygotowanie wiadomości do wysłania do OpenAI
+        let messagesForAI = [...history.messages];
 
-        // Zapisanie zaktualizowanej historii
-        await saveHistory(historyId, history);
+        // Dodanie instrukcji tylko dla modelu 'gpt-4o'
+        if (model === 'gpt-4o') {
+            messagesForAI = [
+                {
+                    role: 'system',
+                    content: 'Masz na imię Bartosz i jesteś sztuczną inteligencją. Jesteś specjalistą w programowaniu.'
+                },
+                ...messagesForAI
+            ];
+        }
 
-        res.json({ reply: assistantMessage });
-    } catch (error) {
-        console.error('Error:', error);
-        res.status(500).json({ error: 'Wystąpił błąd podczas przetwarzania żądania.' });
+        try {
+            const completion = await openai.chat.completions.create({
+                model: model || "gpt-4o", // Użyj wybranego modelu lub domyślnego
+                messages: messagesForAI,
+            });
+
+            const assistantMessage = completion.choices[0].message.content.trim();
+
+            // Dodanie odpowiedzi asystenta do historii
+            history.messages.push({ role: 'assistant', content: assistantMessage });
+
+            // Zapisanie zaktualizowanej historii
+            await saveHistory(historyId, history);
+
+            res.json({ reply: assistantMessage });
+        } catch (error) {
+            console.error('Error:', error);
+            res.status(500).json({ error: 'Wystąpił błąd podczas przetwarzania żądania.' });
+        }
     }
 });
 
