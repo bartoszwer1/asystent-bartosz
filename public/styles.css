@@ -18,8 +18,8 @@ body {
 
 /* Kontener główny */
 .container {
-    width: 400px;
-    height: auto; /* Początkowa wysokość dopasowana do zawartości */
+    width: 1px;
+    height: 1px; /* Początkowa wysokość dopasowana do zawartości */
     max-width: 100%;
     background-color: #1e1e2e; /* Ciemny granatowy kolor tła */
     border-radius: 12px;
@@ -217,8 +217,8 @@ header h1 {
 
 /* Animacja rozmiaru kontenera */
 .container.expanded {
-    width: 95%;
-    height: 90vh;
+    width: 98%;
+    height: 98vh;
 }
 
 /* Stylowanie bocznego panelu historii czatów */
