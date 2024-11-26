@@ -32,7 +32,7 @@ async function test() {
           content: [
             {
               type: "text",
-              text: "Co jest na zdjęciu?"
+              text: "Co jest na zdjęciu? Jaki prompt mógł zostać uyty do wygenerowania takiej grafiki?"
             },
             {
               type: "image_url",

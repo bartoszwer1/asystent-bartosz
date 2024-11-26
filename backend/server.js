@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 import OpenAI from "openai";
 import dotenv from 'dotenv';
 import fs from 'fs/promises';
+import multer from 'multer'; // Import multer
 
 // Konfiguracja zmiennych środowiskowych
 dotenv.config();
@@ -17,6 +18,10 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Konfiguracja multer do przechowywania plików w pamięci
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
 
 // Konfiguracja ścieżki do plików statycznych
 const __filename = fileURLToPath(import.meta.url);
@@ -182,11 +187,12 @@ app.put('/api/histories/:id/rename', async (req, res) => {
 });
 
 // Endpoint API: Obsługa czatu i generowania obrazów
-app.post('/api/chat', async (req, res) => {
-    const { historyId, message, model, resolution, quality, style, n } = req.body;
+app.post('/api/chat', upload.single('image'), async (req, res) => {
+    const { historyId, message, model, imageUrl } = req.body;
+    const imageFile = req.file;
 
-    if (!historyId || !message || !model) {
-        return res.status(400).json({ error: 'Brak historyId, modelu lub wiadomości.' });
+    if (!historyId || !model) {
+        return res.status(400).json({ error: 'Brak historyId lub modelu.' });
     }
 
     const history = await getHistoryById(historyId);
@@ -194,19 +200,80 @@ app.post('/api/chat', async (req, res) => {
         return res.status(404).json({ error: 'Historia nie znaleziona.' });
     }
 
-    if (model === 'dall-e-2' || model === 'dall-e-3') {
+    if (model === 'interpretacja-zdjec') {
+        // Obsługa interpretacji zdjęć
+        let imageData = '';
+
+        if (imageFile) {
+            // Obsługa przesłanego pliku graficznego
+            imageData = imageFile.buffer.toString('base64');
+        } else if (imageUrl) {
+            // Obsługa linku do grafiki
+            imageData = imageUrl;
+        } else {
+            return res.status(400).json({ error: 'Brak obrazu do interpretacji.' });
+        }
+
+        try {
+            const promptText = message || "Co jest na zdjęciu? Jaki prompt mógł zostać uyty do wygenerowania takiej grafiki?";
+
+            const messages = [
+                {
+                    role: "user",
+                    content: [
+                        { type: "text", text: promptText }
+                    ]
+                }
+            ];
+
+            if (imageFile) {
+                messages[0].content.push({
+                    type: "image_url",
+                    image_url: {
+                        url: `data:image/jpeg;base64,${imageData}`
+                    },
+                });
+            } else if (imageUrl) {
+                messages[0].content.push({
+                    type: "image_url",
+                    image_url: {
+                        url: imageData,
+                    },
+                });
+            }
+
+            const completion = await openai.chat.completions.create({
+                model: "gpt-4o",
+                messages: messages,
+            });
+
+            const assistantMessage = completion.choices[0].message.content.trim();
+
+            // Dodanie wiadomości użytkownika i asystenta do historii
+            history.messages.push({ role: 'user', content: promptText });
+            history.messages.push({ role: 'assistant', content: assistantMessage });
+
+            // Zapisanie zaktualizowanej historii
+            await saveHistory(historyId, history);
+
+            res.json({ reply: assistantMessage });
+        } catch (error) {
+            console.error('Błąd podczas interpretacji zdjęcia:', error);
+            res.status(500).json({ error: 'Wystąpił błąd podczas interpretacji zdjęcia.' });
+        }
+    } else if (model === 'dall-e-2' || model === 'dall-e-3') {
         // Obsługa generowania obrazów
         try {
             const generateOptions = {
                 model: model,
                 prompt: message,
-                size: resolution || "1024x1024",
-                style: style || "vivid",
-                quality: quality || (model === 'dall-e-3' ? "hd" : undefined)
+                size: req.body.resolution || "1024x1024",
+                style: req.body.style || "vivid",
+                quality: req.body.quality || (model === 'dall-e-3' ? "hd" : undefined)
             };
 
             if (model === 'dall-e-2') {
-                generateOptions.n = n && n <= 5 ? n : 1;
+                generateOptions.n = req.body.n && req.body.n <= 5 ? req.body.n : 1;
             } else if (model === 'dall-e-3') {
                 generateOptions.n = 1;
             }

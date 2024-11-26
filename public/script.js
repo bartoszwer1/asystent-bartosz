@@ -36,6 +36,217 @@ renameModal.innerHTML = `
 `;
 document.body.appendChild(renameModal);
 
+// Modal do wyboru opcji dodania obrazu
+const imageUploadModal = document.createElement('div');
+imageUploadModal.id = 'imageUploadModal';
+imageUploadModal.classList.add('image-upload-modal', 'hidden');
+imageUploadModal.innerHTML = `
+    <div class="image-upload-modal-content">
+        <h2>Dodaj Obraz</h2>
+        <div class="option">
+            <input type="radio" id="addFromDisk" name="imageOption" value="disk" checked>
+            <label for="addFromDisk">Dodaj obraz z dysku</label>
+        </div>
+        <div class="option">
+            <input type="radio" id="addFromLink" name="imageOption" value="link">
+            <label for="addFromLink">Wstaw link do obrazka</label>
+        </div>
+        <div class="modal-buttons">
+            <button id="cancelImageUpload">Anuluj</button>
+            <button id="confirmImageUpload">OK</button>
+        </div>
+    </div>
+`;
+document.body.appendChild(imageUploadModal);
+
+// Funkcje do otwierania i zamykania modalu dodawania obrazu
+function openImageUploadModal() {
+    imageUploadModal.classList.remove('hidden');
+}
+
+function closeImageUploadModal() {
+    imageUploadModal.classList.add('hidden');
+}
+
+// Event Listeners dla przycisków modalu dodawania obrazu
+document.getElementById('cancelImageUpload').addEventListener('click', () => {
+    closeImageUploadModal();
+});
+
+document.getElementById('confirmImageUpload').addEventListener('click', () => {
+    const selectedOption = document.querySelector('input[name="imageOption"]:checked').value;
+    closeImageUploadModal();
+    if (selectedOption === 'disk') {
+        openFileSelection();
+    } else if (selectedOption === 'link') {
+        openLinkInput();
+    }
+});
+
+// Funkcja do otwierania okna wyboru pliku
+function openFileSelection() {
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*';
+    fileInput.style.display = 'none';
+    fileInput.id = 'finalFileInput';
+    document.body.appendChild(fileInput);
+
+    fileInput.click();
+
+    fileInput.addEventListener('change', () => {
+        const file = fileInput.files[0];
+        if (file) {
+            displaySelectedImage(file);
+        }
+        fileInput.remove();
+    });
+}
+
+// Funkcja do otwierania okna wprowadzania linku
+function openLinkInput() {
+    const linkInputModal = document.createElement('div');
+    linkInputModal.id = 'linkInputModal';
+    linkInputModal.classList.add('image-upload-modal', 'hidden');
+    linkInputModal.innerHTML = `
+        <div class="image-upload-modal-content">
+            <h2>Wstaw Link do Obrazka</h2>
+            <input type="text" id="imageLinkInput" placeholder="Wklej URL obrazka..." />
+            <div class="modal-buttons">
+                <button id="cancelLinkInput">Anuluj</button>
+                <button id="confirmLinkInput">OK</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(linkInputModal);
+    linkInputModal.classList.remove('hidden');
+
+    // Event Listeners dla przycisków modalu wstawiania linku
+    document.getElementById('cancelLinkInput').addEventListener('click', () => {
+        linkInputModal.remove();
+    });
+
+    document.getElementById('confirmLinkInput').addEventListener('click', () => {
+        const link = document.getElementById('imageLinkInput').value.trim();
+        if (link) {
+            displaySelectedLink(link);
+        } else {
+            alert('Proszę wprowadzić poprawny URL.');
+        }
+        linkInputModal.remove();
+    });
+}
+
+// Funkcja do wyświetlania wybranego obrazu z dysku
+function displaySelectedImage(file) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const imageURL = e.target.result;
+
+        // Usuń istniejący kontener, jeśli istnieje
+        const existingContainer = document.getElementById('selectedImageContainer');
+        if (existingContainer) {
+            existingContainer.remove();
+        }
+
+        // Stwórz nowy kontener
+        const selectedImageContainer = document.createElement('div');
+        selectedImageContainer.id = 'selectedImageContainer';
+
+        selectedImageContainer.innerHTML = `
+            <div class="image-info">
+                <img src="${imageURL}" alt="${file.name}">
+                <span>${file.name}</span>
+            </div>
+            <button id="sendSelectedImage">Wyślij Obraz</button>
+        `;
+
+        // Dodaj do input-area
+        document.querySelector('.input-area').appendChild(selectedImageContainer);
+
+        // Event Listener dla przycisku wysyłania obrazu
+        document.getElementById('sendSelectedImage').addEventListener('click', () => {
+            sendImage(file, true);
+            // Usuń kontener po wysłaniu
+            selectedImageContainer.remove();
+            // Przywróć przycisk +
+            restoreAddImageButton();
+        });
+    };
+    reader.readAsDataURL(file);
+}
+
+// Funkcja do wyświetlania wprowadzonego linku
+function displaySelectedLink(link) {
+    // Usuń istniejący kontener, jeśli istnieje
+    const existingContainer = document.getElementById('selectedImageContainer');
+    if (existingContainer) {
+        existingContainer.remove();
+    }
+
+    // Stwórz nowy kontener
+    const selectedImageContainer = document.createElement('div');
+    selectedImageContainer.id = 'selectedImageContainer';
+
+    selectedImageContainer.innerHTML = `
+        <div class="image-info">
+            <img src="${link}" alt="Obrazek z linku">
+            <span>${link}</span>
+        </div>
+        <button id="sendSelectedImage">Wyślij Obraz</button>
+    `;
+
+    // Dodaj do input-area
+    document.querySelector('.input-area').appendChild(selectedImageContainer);
+
+    // Event Listener dla przycisku wysyłania obrazu
+    document.getElementById('sendSelectedImage').addEventListener('click', () => {
+        sendImage(link, false);
+        // Usuń kontener po wysłaniu
+        selectedImageContainer.remove();
+        // Przywróć przycisk +
+        restoreAddImageButton();
+    });
+}
+
+// Funkcja do przywracania przycisku dodawania obrazu
+function restoreAddImageButton() {
+    // Usuń istniejący kontener z wybranym obrazem lub linkiem, jeśli istnieje
+    const selectedImageContainer = document.getElementById('selectedImageContainer');
+    if (selectedImageContainer) {
+        selectedImageContainer.remove();
+    }
+
+    // Dodaj przycisk +
+    if (!document.getElementById('addImageButton')) {
+        const addImageButton = document.createElement('button');
+        addImageButton.id = 'addImageButton';
+        addImageButton.textContent = '+';
+        addImageButton.style.flex = '1'; // Zajmuje całą szerokość
+        addImageButton.style.padding = '10px';
+        addImageButton.style.margin = '0';
+        addImageButton.style.backgroundColor = '#3a3ab8'; /* Ciemny fioletowy */
+        addImageButton.style.color = '#ffffff';
+        addImageButton.style.border = 'none';
+        addImageButton.style.borderRadius = '4px';
+        addImageButton.style.cursor = 'pointer';
+        addImageButton.style.fontSize = '1.2em';
+        addImageButton.style.transition = 'background-color 0.3s ease';
+
+        addImageButton.addEventListener('mouseenter', () => {
+            addImageButton.style.backgroundColor = '#5a5ad8';
+        });
+
+        addImageButton.addEventListener('mouseleave', () => {
+            addImageButton.style.backgroundColor = '#3a3ab8';
+        });
+
+        addImageButton.addEventListener('click', openImageUploadModal);
+
+        document.querySelector('.input-area').appendChild(addImageButton);
+    }
+}
+
 const closeRenameModalButton = renameModal.querySelector('.close');
 const saveHistoryNameButton = renameModal.querySelector('#saveHistoryName');
 const newHistoryNameInput = renameModal.querySelector('#newHistoryName');
@@ -54,7 +265,7 @@ let imageParametersSelected = {
     resolution: "1024x1024",
     quality: "standard",
     style: "vivid",
-    n: 1, // Dla DALL-E 3
+    n: 1, // Dla DALL-E 2
 };
 
 // Funkcja do animacji rozmiaru kontenera
@@ -82,11 +293,15 @@ function addMessage(sender, text, isImage = false) {
 
     if (isImage) {
         // Wyświetlanie obrazu
+        const anchor = document.createElement('a');
+        anchor.href = text;
+        anchor.target = "_blank" ;
         const img = document.createElement('img');
         img.src = text;
         img.alt = 'Generated Image';
         img.classList.add('generated-image');
-        textDiv.appendChild(img);
+        anchor.appendChild(img);
+        textDiv.appendChild(anchor);
     } else if (sender === 'assistant') {
         // Przekształć Markdown na HTML i oczyść
         const dirtyHTML = marked.parse(text);
@@ -108,6 +323,11 @@ function addMessage(sender, text, isImage = false) {
 async function sendMessage(message) {
     if (!currentHistoryId) {
         alert('Proszę utworzyć lub wybrać historię czatu.');
+        return;
+    }
+
+    if (currentModel === 'interpretacja-zdjec') {
+        // Dla modelu Interpretacja zdjęć, nie wysyłamy tekstu
         return;
     }
 
@@ -166,6 +386,117 @@ async function sendMessage(message) {
     } finally {
         loading.classList.add('hidden'); // Ukrycie ładowania
     }
+}
+
+// Funkcja do wysyłania obrazu do backendu
+async function sendImage(imageData, isFile = true) {
+    if (!currentHistoryId) {
+        alert('Proszę utworzyć lub wybrać historię czatu.');
+        return;
+    }
+
+    loading.classList.remove('hidden'); // Pokazanie ładowania
+
+    const formData = new FormData();
+    formData.append('historyId', currentHistoryId);
+    formData.append('model', currentModel);
+
+    if (isFile) {
+        formData.append('image', imageData);
+    } else {
+        formData.append('imageUrl', imageData);
+    }
+
+    try {
+        const response = await fetch('/api/chat', {
+            method: 'POST',
+            body: formData
+        });
+
+        const result = await response.json();
+        if (response.ok) {
+            addMessage('user', isFile ? `Załadowano obraz: ${imageData.name}` : `Załadowano obraz z linku: ${imageData}`);
+
+            if (currentModel === 'interpretacja-zdjec') {
+                addMessage('assistant', result.reply);
+            } else {
+                // Obsługa innych modeli, jeśli są
+            }
+        } else {
+            addMessage('assistant', 'Przepraszam, wystąpił błąd podczas przetwarzania Twojej prośby.');
+        }
+
+    } catch (error) {
+        console.error('Błąd:', error);
+        addMessage('assistant', 'Przepraszam, wystąpił błąd podczas przetwarzania Twojej prośby.');
+    } finally {
+        loading.classList.add('hidden'); // Ukrycie ładowania
+    }
+}
+
+// Funkcja do otwierania okna dodawania obrazu
+function openImageUpload() {
+    const imageInputContainer = document.createElement('div');
+    imageInputContainer.id = 'imageInputContainer';
+    imageInputContainer.style.marginTop = '10px';
+
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*';
+    fileInput.id = 'fileInput';
+    fileInput.style.display = 'block';
+    fileInput.style.marginBottom = '10px';
+
+    const urlInput = document.createElement('input');
+    urlInput.type = 'text';
+    urlInput.placeholder = 'Wklej link do obrazka...';
+    urlInput.id = 'urlInput';
+    urlInput.style.display = 'block';
+    urlInput.style.marginBottom = '10px';
+
+    const sendButton = document.createElement('button');
+    sendButton.textContent = 'Wyślij Obraz';
+    sendButton.id = 'sendImageButton';
+    sendButton.style.padding = '10px 20px';
+    sendButton.style.backgroundColor = '#3a3ab8';
+    sendButton.style.color = '#ffffff';
+    sendButton.style.border = 'none';
+    sendButton.style.borderRadius = '4px';
+    sendButton.style.cursor = 'pointer';
+    sendButton.style.transition = 'background-color 0.3s ease';
+
+    sendButton.addEventListener('mouseenter', () => {
+        sendButton.style.backgroundColor = '#5a5ad8';
+    });
+
+    sendButton.addEventListener('mouseleave', () => {
+        sendButton.style.backgroundColor = '#3a3ab8';
+    });
+
+    sendButton.addEventListener('click', () => {
+        const file = fileInput.files[0];
+        const url = urlInput.value.trim();
+
+        if (file) {
+            sendImage(file, true);
+        } else if (url) {
+            sendImage(url, false);
+        } else {
+            alert('Proszę dodać plik graficzny lub wprowadzić link.');
+        }
+    });
+
+    imageInputContainer.appendChild(fileInput);
+    imageInputContainer.appendChild(urlInput);
+    imageInputContainer.appendChild(sendButton);
+
+    // Jeśli już istnieje, usuń
+    const existingContainer = document.getElementById('imageInputContainer');
+    if (existingContainer) {
+        existingContainer.remove();
+    }
+
+    document.querySelector('.input-area').appendChild(imageInputContainer);
 }
 
 // Funkcja do otwierania bocznego panelu historii
@@ -254,7 +585,7 @@ async function loadConversation(historyId) {
             data.history.messages.forEach(msg => {
                 // Wyświetlaj tylko wiadomości z rolami 'user' i 'assistant'
                 if (msg.role === 'user' || msg.role === 'assistant') {
-                    if (msg.role === 'assistant' && (currentModel === 'dall-e-2' || currentModel === 'dall-e-3')) {
+                    if (msg.role === 'assistant' && (currentModel === 'dall-e-2' || currentModel === 'dall-e-3' || currentModel === 'interpretacja-zdjec')) {
                         addMessage(msg.role, msg.content, true);
                     } else {
                         addMessage(msg.role, msg.content);
@@ -351,17 +682,11 @@ function getModelDisplayName(model) {
             return 'DALL-E 2';
         case 'dall-e-3':
             return 'DALL-E 3';
+        case 'interpretacja-zdjec':
+            return 'Interpretacja zdjęć'; // Nowa nazwa
         default:
             return 'GPT-4o';
     }
-}
-
-// Funkcja do obsługi wyboru modelu
-function handleModelSelection(model) {
-    currentModel = model;
-    updateModelButton();
-    closeModelModalFunc();
-    updateImageParametersUI();
 }
 
 // Funkcja do otwierania modalu renamingu
@@ -538,6 +863,83 @@ function updateImageParametersUI() {
     }
 }
 
+// Funkcja do aktualizacji UI w zależności od wybranego modelu
+function updateUIForModel() {
+    if (currentModel === 'interpretacja-zdjec') {
+        // Ukryj pole tekstowe i przycisk wysyłania
+        userInput.style.display = 'none';
+        sendButton.style.display = 'none';
+
+        // Dodaj przycisk do dodawania obrazu, jeśli jeszcze nie istnieje
+        if (!document.getElementById('addImageButton')) {
+            const addImageButton = document.createElement('button');
+            addImageButton.id = 'addImageButton';
+            addImageButton.textContent = '+';
+            addImageButton.style.flex = '1'; // Zajmuje całą szerokość
+            addImageButton.style.padding = '10px';
+            addImageButton.style.margin = '0';
+            addImageButton.style.backgroundColor = '#3a3ab8'; /* Ciemny fioletowy */
+            addImageButton.style.color = '#ffffff';
+            addImageButton.style.border = 'none';
+            addImageButton.style.borderRadius = '4px';
+            addImageButton.style.cursor = 'pointer';
+            addImageButton.style.fontSize = '1.2em';
+            addImageButton.style.transition = 'background-color 0.3s ease';
+
+            addImageButton.addEventListener('mouseenter', () => {
+                addImageButton.style.backgroundColor = '#5a5ad8';
+            });
+
+            addImageButton.addEventListener('mouseleave', () => {
+                addImageButton.style.backgroundColor = '#3a3ab8';
+            });
+
+            addImageButton.addEventListener('click', openImageUploadModal);
+
+            document.querySelector('.input-area').appendChild(addImageButton);
+        }
+    } else {
+        // Pokaż pole tekstowe i przycisk wysyłania
+        userInput.style.display = 'block';
+        sendButton.style.display = 'block';
+
+        // Usuń przycisk do dodawania obrazu, jeśli istnieje
+        const addImageButton = document.getElementById('addImageButton');
+        if (addImageButton) {
+            addImageButton.remove();
+        }
+
+        // Usuń kontener z inputem obrazu, jeśli istnieje
+        const imageInputContainer = document.getElementById('imageInputContainer');
+        if (imageInputContainer) {
+            imageInputContainer.remove();
+        }
+
+        // Usuń kontener z wybranym obrazem lub linkiem, jeśli istnieje
+        const selectedImageContainer = document.getElementById('selectedImageContainer');
+        if (selectedImageContainer) {
+            selectedImageContainer.remove();
+        }
+    }
+}
+
+// Funkcja do obsługi wyboru modelu
+function handleModelSelection(model) {
+    currentModel = model;
+    updateModelButton();
+    closeModelModalFunc();
+    updateUIForModel();
+    updateImageParametersUI();
+}
+
+// Event Listener dla wyboru modelu
+modelOptions.forEach(option => {
+    option.addEventListener('click', () => {
+        const selectedModel = option.getAttribute('data-model');
+        handleModelSelection(selectedModel);
+    });
+});
+
 // Event Listeners
 sendButton.addEventListener('click', () => {
     const message = userInput.value.trim();
@@ -577,14 +979,6 @@ closeModelModal.addEventListener('click', () => {
     closeModelModalFunc();
 });
 
-// Obsługa wyboru modelu
-modelOptions.forEach(option => {
-    option.addEventListener('click', () => {
-        const selectedModel = option.getAttribute('data-model');
-        handleModelSelection(selectedModel);
-    });
-});
-
 // Obsługa zamknięcia modalu renamingu
 closeRenameModalButton.addEventListener('click', () => {
     closeRenameModalFunc();
@@ -606,5 +1000,6 @@ renameModal.addEventListener('click', (e) => {
 window.addEventListener('DOMContentLoaded', async () => {
     await loadHistories();
     updateModelButton();
+    updateUIForModel();
     updateImageParametersUI();
 });
