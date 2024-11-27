@@ -1,6 +1,6 @@
 {
     "name": "asystent-bartosz-backend",
-    "version": "1.8.0",
+    "version": "1.8.3",
     "description": "Backend dla bartosz.",
     "type": "module",
     "main": "server.js",

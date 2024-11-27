@@ -5,7 +5,7 @@ const sendButton = document.getElementById('sendButton');
 const userInput = document.getElementById('userInput');
 const conversation = document.getElementById('conversation');
 const container = document.querySelector('.container'); // Kontener główny
-const loading = document.getElementById('loading');
+// const loading = document.getElementById('loading');
 
 const historyButton = document.getElementById('historyButton');
 const historySidebar = document.getElementById('historySidebar');
@@ -21,6 +21,46 @@ const modelOptions = document.querySelectorAll('.model-option');
 
 // Kontener dla parametrów generowania obrazów
 const imageParameters = document.getElementById('imageParameters');
+
+function showTypingIndicator() {
+    const typingIndicator = document.createElement('div');
+    typingIndicator.classList.add('typing-indicator');
+    typingIndicator.innerHTML = `
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+    `;
+    conversation.appendChild(typingIndicator);
+    conversation.scrollTop = conversation.scrollHeight;
+    return typingIndicator;
+}
+
+function removeTypingIndicator(indicator) {
+    if (indicator) {
+        indicator.remove();
+    }
+}
+
+// // Toggle Theme Function
+// const toggleThemeButton = document.getElementById('toggleTheme');
+
+// toggleThemeButton.addEventListener('click', () => {
+//     document.body.classList.toggle('light-mode');
+//     // Zapisz preferencje użytkownika w localStorage
+//     if (document.body.classList.contains('light-mode')) {
+//         localStorage.setItem('theme', 'light');
+//     } else {
+//         localStorage.setItem('theme', 'dark');
+//     }
+// });
+
+// // Inicjalizacja motywu na podstawie zapisanych preferencji
+// window.addEventListener('DOMContentLoaded', () => {
+//     const savedTheme = localStorage.getItem('theme');
+//     if (savedTheme === 'light') {
+//         document.body.classList.add('light-mode');
+//     }
+// });
 
 // Modal do zmiany nazwy historii
 const renameModal = document.createElement('div');
@@ -62,9 +102,11 @@ document.body.appendChild(imageUploadModal);
 // Funkcje do otwierania i zamykania modalu dodawania obrazu
 function openImageUploadModal() {
     imageUploadModal.classList.remove('hidden');
+    imageUploadModal.classList.add('visible');
 }
 
 function closeImageUploadModal() {
+    imageUploadModal.classList.remove('visible');
     imageUploadModal.classList.add('hidden');
 }
 
@@ -282,44 +324,77 @@ expandContainer(); // Wywołanie animacji po wysłaniu wiadomości
 
 // Funkcja do dodawania wiadomości do konwersacji
 function addMessage(sender, text, isImage = false) {
-    // Ignoruj wiadomości z rolą 'system'
     if (sender === 'system') return;
 
     const messageDiv = document.createElement('div');
     messageDiv.classList.add('message', sender);
 
+    // Avatar
+    const avatar = document.createElement('img');
+    avatar.classList.add('avatar');
+    if (sender === 'user') {
+        avatar.src = '/avatars/user.png'; // Ścieżka do avatara użytkownika
+        avatar.alt = 'User Avatar';
+    } else {
+        avatar.src = '/avatars/assistant.png'; // Ścieżka do avatara asystenta
+        avatar.alt = 'Assistant Avatar';
+    }
+
+    // Dodaj avatar przed lub po wiadomości w zależności od nadawcy
+    if (sender === 'assistant') {
+        messageDiv.appendChild(avatar);
+    }
+
     const textDiv = document.createElement('div');
     textDiv.classList.add('text');
 
     if (isImage) {
-        // Wyświetlanie obrazu
         const anchor = document.createElement('a');
         anchor.href = text;
-        anchor.target = "_blank" ;
+        anchor.target = "_blank";
         const img = document.createElement('img');
         img.src = text;
         img.alt = 'Generated Image';
         img.classList.add('generated-image');
         anchor.appendChild(img);
         textDiv.appendChild(anchor);
+
+        // Dodaj przycisk do pobierania obrazu
+        // const downloadButton = document.createElement('button');
+        // downloadButton.textContent = 'Pobierz';
+        // downloadButton.classList.add('download-button');
+        // downloadButton.addEventListener('click', () => {
+        //     const link = document.createElement('a');
+        //     link.href = text;
+        //     link.download = 'generated_image.png'; // Możesz dynamicznie ustawiać nazwę pliku
+        //     link.click();
+        // });
+        // textDiv.appendChild(downloadButton);
     } else if (sender === 'assistant') {
-        // Przekształć Markdown na HTML i oczyść
         const dirtyHTML = marked.parse(text);
         const cleanHTML = DOMPurify.sanitize(dirtyHTML);
         textDiv.innerHTML = cleanHTML;
     } else {
-        // Dla wiadomości użytkownika wyświetl jako tekst
         textDiv.textContent = text;
     }
 
-    messageDiv.appendChild(textDiv);
-    conversation.appendChild(messageDiv);
+    // Dodaj timestamp
+    const timestamp = document.createElement('div');
+    timestamp.classList.add('timestamp');
+    const now = new Date();
+    timestamp.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-    // Przewiń do dołu konwersacji
+    textDiv.appendChild(timestamp);
+    messageDiv.appendChild(textDiv);
+
+    if (sender === 'user') {
+        messageDiv.appendChild(avatar);
+    }
+
+    conversation.appendChild(messageDiv);
     conversation.scrollTop = conversation.scrollHeight;
 }
 
-// Funkcja do wysyłania zapytania do backendu
 async function sendMessage(message) {
     if (!currentHistoryId) {
         alert('Proszę utworzyć lub wybrać historię czatu.');
@@ -332,8 +407,9 @@ async function sendMessage(message) {
     }
 
     addMessage('user', message);
+    const typingIndicator = showTypingIndicator();
 
-    loading.classList.remove('hidden'); // Pokazanie ładowania
+    // loading.classList.remove('hidden'); // Pokazanie ładowania
 
     // Przygotowanie danych do wysłania
     const payload = {
@@ -384,7 +460,8 @@ async function sendMessage(message) {
         console.error('Błąd:', error);
         addMessage('assistant', 'Przepraszam, wystąpił błąd podczas przetwarzania Twojej prośby.');
     } finally {
-        loading.classList.add('hidden'); // Ukrycie ładowania
+        removeTypingIndicator(typingIndicator);
+        // loading.classList.add('hidden'); // Ukrycie ładowania
     }
 }
 
@@ -395,7 +472,7 @@ async function sendImage(imageData, isFile = true) {
         return;
     }
 
-    loading.classList.remove('hidden'); // Pokazanie ładowania
+    // loading.classList.remove('hidden'); // Pokazanie ładowania
 
     const formData = new FormData();
     formData.append('historyId', currentHistoryId);
@@ -430,7 +507,7 @@ async function sendImage(imageData, isFile = true) {
         console.error('Błąd:', error);
         addMessage('assistant', 'Przepraszam, wystąpił błąd podczas przetwarzania Twojej prośby.');
     } finally {
-        loading.classList.add('hidden'); // Ukrycie ładowania
+        // loading.classList.add('hidden'); // Ukrycie ładowania
     }
 }
 
@@ -600,6 +677,25 @@ async function loadConversation(historyId) {
     }
 }
 
+// Search History Function
+function searchHistories(query) {
+    const historyItems = document.querySelectorAll('.history-item');
+    historyItems.forEach(item => {
+        const name = item.querySelector('.history-name').textContent.toLowerCase();
+        if (name.includes(query.toLowerCase())) {
+            item.style.display = 'flex';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+}
+
+// Event Listener for Search Input
+document.getElementById('searchHistory').addEventListener('input', (e) => {
+    const query = e.target.value;
+    searchHistories(query);
+});
+
 // Funkcja do tworzenia nowej historii
 async function createNewHistory() {
     const newName = prompt('Podaj nazwę nowej historii:', `Chat ${new Date().toISOString().split('T')[0]}`);
@@ -653,13 +749,103 @@ async function deleteAllHistories() {
     }
 }
 
+// Export History Function
+async function exportHistory() {
+    if (!currentHistoryId) {
+        alert('Proszę wybrać historię do eksportu.');
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/histories/${currentHistoryId}`);
+        const data = await response.json();
+        if (response.ok) {
+            const blob = new Blob([JSON.stringify(data.history, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${data.history.name}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        } else {
+            alert('Błąd podczas eksportu historii.');
+        }
+    } catch (error) {
+        console.error('Błąd:', error);
+        alert('Wystąpił błąd podczas eksportu historii.');
+    }
+}
+
+// Import History Function
+function importHistory() {
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'application/json';
+    fileInput.style.display = 'none';
+    fileInput.id = 'importFileInput';
+    document.body.appendChild(fileInput);
+
+    fileInput.click();
+
+    fileInput.addEventListener('change', async () => {
+        const file = fileInput.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const historyData = JSON.parse(e.target.result);
+                    const response = await fetch('/api/histories', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ name: historyData.name })
+                    });
+                    const data = await response.json();
+                    if (response.ok) {
+                        const newHistoryId = data.historyId;
+                        // Zapisz wiadomości z zaimportowanej historii
+                        for (const msg of historyData.messages) {
+                            await fetch('/api/chat', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    historyId: newHistoryId,
+                                    message: msg.content,
+                                    model: currentModel
+                                })
+                            });
+                        }
+                        loadHistories();
+                        alert('Historia została zaimportowana.');
+                    } else {
+                        alert('Błąd podczas importowania historii.');
+                    }
+                } catch (error) {
+                    console.error('Błąd:', error);
+                    alert('Nieprawidłowy format pliku.');
+                }
+            };
+            reader.readAsText(file);
+        }
+        fileInput.remove();
+    });
+}
+
+// Event Listeners for Export/Import Buttons
+document.getElementById('exportHistoryButton').addEventListener('click', exportHistory);
+document.getElementById('importHistoryButton').addEventListener('click', importHistory);
+
 // Funkcja do otwierania modalu wyboru modelu
 function openModelModal() {
     modelModal.classList.remove('hidden');
+    modelModal.classList.add('visible');
 }
 
-// Funkcja do zamykania modalu wyboru modelu
-function closeModelModalFunc() { // Zmieniono nazwę funkcji, aby uniknąć konfliktu z `closeModelModal`
+function closeModelModalFunc() {
+    modelModal.classList.remove('visible');
     modelModal.classList.add('hidden');
 }
 
@@ -694,11 +880,13 @@ function openRenameModal(historyId, currentName) {
     historyIdToRename = historyId;
     newHistoryNameInput.value = currentName;
     renameModal.classList.remove('hidden');
+    renameModal.classList.add('visible');
     newHistoryNameInput.focus();
 }
 
 // Funkcja do zamykania modalu renamingu
 function closeRenameModalFunc() {
+    renameModal.classList.remove('visible');
     renameModal.classList.add('hidden');
     historyIdToRename = null;
 }
