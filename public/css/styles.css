@@ -839,6 +839,17 @@ header h1 {
     }
 }
 
+@media (max-width: 600px) {
+    .message-footer {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .message-footer .download-button {
+        margin-top: 5px;
+    }
+}
+
 .typing-indicator {
     display: flex;
     align-items: center;
@@ -910,7 +921,38 @@ header h1 {
     transition: background-color 0.3s ease;
 }
 
-.download-button:hover {
-    background-color: #e6b800; /* Ciemniejszy żółty przy najechaniu */
+.download-button i {
+    margin-right: 5px;
 }
 
+.download-button:hover {
+    background-color: #cda400; /* Ciemniejszy żółty przy najechaniu */
+}
+
+/* Stylowanie kontenera wiadomości - footer */
+.message-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 5px;
+}
+
+.message-footer .timestamp {
+    font-size: 0.8em;
+    color: #888888;
+}
+
+.message-footer .download-button {
+    padding: 5px 10px;
+    background-color: #ffcc00; /* Żółty kolor */
+    color: #1e1e2e; /* Ciemny kolor tekstu */
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8em;
+    transition: background-color 0.3s ease;
+}
+
+.message-footer .download-button:hover {
+    background-color: #e6b800; /* Ciemniejszy żółty przycisk */
+}

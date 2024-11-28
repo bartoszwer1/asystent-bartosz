@@ -8,6 +8,7 @@ import OpenAI from "openai";
 import dotenv from 'dotenv';
 import fs from 'fs/promises';
 import multer from 'multer'; // Import multer
+import fetch from 'node-fetch'; // Dodaj ten import na początku pliku
 
 // Konfiguracja zmiennych środowiskowych
 dotenv.config();
@@ -126,6 +127,36 @@ async function saveHistory(historyId, historyData) {
 // Konfiguracja OpenAI
 const openai = new OpenAI({
     apiKey: process.env['OPENAI_API_KEY']
+});
+
+// Endpoint API: Proxy do pobierania obrazów
+app.get('/api/proxy-image', async (req, res) => {
+    const imageUrl = req.query.url;
+    console.log(`Proxy request received for URL: ${imageUrl}`);
+    if (!imageUrl) {
+        console.log('No URL provided.');
+        return res.status(400).json({ error: 'Brak parametru URL.' });
+    }
+
+    try {
+        const response = await fetch(imageUrl);
+        console.log(`Fetch response status: ${response.status}`);
+
+        if (!response.ok) {
+            const responseText = await response.text();
+            console.log(`Fetch failed with status ${response.status}: ${responseText}`);
+            throw new Error('Nie udało się pobrać obrazka.');
+        }
+
+        const buffer = await response.buffer();
+        const contentType = response.headers.get('content-type') || 'image/png';
+        console.log(`Fetched image with Content-Type: ${contentType}`);
+        res.set('Content-Type', contentType);
+        res.send(buffer);
+    } catch (error) {
+        console.error('Błąd proxy:', error);
+        res.status(500).json({ error: 'Nie udało się pobrać obrazka.' });
+    }
 });
 
 // Endpoint API: Pobieranie listy historii

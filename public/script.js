@@ -348,6 +348,12 @@ function addMessage(sender, text, isImage = false) {
     const textDiv = document.createElement('div');
     textDiv.classList.add('text');
 
+    // Dodaj timestamp
+    const timestamp = document.createElement('div');
+    timestamp.classList.add('timestamp');
+    const now = new Date();
+    timestamp.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
     if (isImage) {
         const anchor = document.createElement('a');
         anchor.href = text;
@@ -359,32 +365,71 @@ function addMessage(sender, text, isImage = false) {
         anchor.appendChild(img);
         textDiv.appendChild(anchor);
 
-        // Dodaj przycisk do pobierania obrazu
-        // const downloadButton = document.createElement('button');
-        // downloadButton.textContent = 'Pobierz';
-        // downloadButton.classList.add('download-button');
-        // downloadButton.addEventListener('click', () => {
-        //     const link = document.createElement('a');
-        //     link.href = text;
-        //     link.download = 'generated_image.png'; // Możesz dynamicznie ustawiać nazwę pliku
-        //     link.click();
-        // });
-        // textDiv.appendChild(downloadButton);
+        // Przycisk "Pobierz"
+        const downloadButton = document.createElement('button');
+        downloadButton.textContent = 'Pobierz';
+        // downloadButton.innerHTML = '<i class="fas fa-download"></i> Pobierz';
+        downloadButton.classList.add('download-button');
+        downloadButton.addEventListener('click', async () => {
+            try {
+                const proxyUrl = '/api/proxy-image?url=' + encodeURIComponent(text);
+                const response = await fetch(proxyUrl);
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Nie udało się pobrać obrazka.');
+                }
+
+                const contentType = response.headers.get('Content-Type') || 'application/octet-stream';
+                if (!contentType.startsWith('image/')) {
+                    throw new Error('Otrzymano niepoprawny typ pliku.');
+                }
+
+                const blob = await response.blob();
+                const blobURL = window.URL.createObjectURL(blob);
+
+                // Generowanie dynamicznej nazwy pliku
+                const now = new Date();
+                const timestampStr = now.toISOString().replace(/[:.]/g, '-');
+                const mimeType = blob.type; // np. 'image/png', 'image/jpeg'
+                const extension = mimeType.split('/')[1] || 'png'; // Fallback do 'png'
+
+                const fileName = `generated_image_${timestampStr}.${extension}`;
+
+                // Tworzenie linku do pobrania
+                const downloadLink = document.createElement('a');
+                downloadLink.href = blobURL;
+                downloadLink.download = fileName;
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                document.body.removeChild(downloadLink);
+
+                // Zwolnij URL blob po pobraniu
+                window.URL.revokeObjectURL(blobURL);
+            } catch (error) {
+                console.error('Błąd podczas pobierania obrazka:', error);
+                alert(`Wystąpił błąd podczas pobierania obrazka: ${error.message}`);
+            }
+        });
+
+        // Tworzenie kontenera na timestamp i przycisk
+        const footerDiv = document.createElement('div');
+        footerDiv.classList.add('message-footer'); // Nowa klasa
+
+        footerDiv.appendChild(timestamp);
+        footerDiv.appendChild(downloadButton);
+
+        textDiv.appendChild(footerDiv);
     } else if (sender === 'assistant') {
         const dirtyHTML = marked.parse(text);
         const cleanHTML = DOMPurify.sanitize(dirtyHTML);
         textDiv.innerHTML = cleanHTML;
+        textDiv.appendChild(timestamp);
     } else {
         textDiv.textContent = text;
+        textDiv.appendChild(timestamp);
     }
 
-    // Dodaj timestamp
-    const timestamp = document.createElement('div');
-    timestamp.classList.add('timestamp');
-    const now = new Date();
-    timestamp.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-    textDiv.appendChild(timestamp);
     messageDiv.appendChild(textDiv);
 
     if (sender === 'user') {
