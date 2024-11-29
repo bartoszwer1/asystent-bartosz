@@ -395,8 +395,8 @@ app.get('*', (req, res) => {
 
 // Inicjalizacja katalogu historii i uruchomienie serwera
 ensureHistoriesDir().then(() => {
-    app.listen(PORT, () => {
-        console.log(`Serwer działa na http://localhost:${PORT}`);
+    app.listen(PORT, '192.168.1.68', () => { // Zmiana tutaj
+        console.log(`Serwer działa na http://localhost:${PORT} i na http://192.168.1.68:${PORT}`);
     });
 }).catch(error => {
     console.error('Błąd podczas tworzenia katalogu historii:', error);

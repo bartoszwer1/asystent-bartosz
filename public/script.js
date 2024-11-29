@@ -41,10 +41,11 @@ function removeTypingIndicator(indicator) {
     }
 }
 
-// // Toggle Theme Function
+// // Przycisk przełączania trybu
 // const toggleThemeButton = document.getElementById('toggleTheme');
 
-// toggleThemeButton.addEventListener('click', () => {
+// // Funkcja do przełączania trybu
+// function toggleTheme() {
 //     document.body.classList.toggle('light-mode');
 //     // Zapisz preferencje użytkownika w localStorage
 //     if (document.body.classList.contains('light-mode')) {
@@ -52,7 +53,10 @@ function removeTypingIndicator(indicator) {
 //     } else {
 //         localStorage.setItem('theme', 'dark');
 //     }
-// });
+// }
+
+// // Event Listener dla przycisku przełączania trybu
+// toggleThemeButton.addEventListener('click', toggleTheme);
 
 // // Inicjalizacja motywu na podstawie zapisanych preferencji
 // window.addEventListener('DOMContentLoaded', () => {
@@ -411,12 +415,27 @@ function addMessage(sender, text, isImage = false) {
             }
         });
 
+        // Przycisk "Kopiuj Link"
+        const copyLinkButton = document.createElement('button');
+        copyLinkButton.textContent = 'Kopiuj Link';
+        copyLinkButton.classList.add('copy-link-button');
+        copyLinkButton.addEventListener('click', () => {
+            navigator.clipboard.writeText(text)
+                .then(() => {
+                    alert('Link skopiowany do schowka!');
+                })
+                .catch(err => {
+                    console.error('Błąd kopiowania:', err);
+                });
+        });
+
         // Tworzenie kontenera na timestamp i przycisk
         const footerDiv = document.createElement('div');
         footerDiv.classList.add('message-footer'); // Nowa klasa
 
         footerDiv.appendChild(timestamp);
         footerDiv.appendChild(downloadButton);
+        footerDiv.appendChild(copyLinkButton);
 
         textDiv.appendChild(footerDiv);
     } else if (sender === 'assistant') {
@@ -434,6 +453,9 @@ function addMessage(sender, text, isImage = false) {
     if (sender === 'user') {
         messageDiv.appendChild(avatar);
     }
+
+    // Dodaj klasę animacji
+    messageDiv.classList.add('fade-in');
 
     conversation.appendChild(messageDiv);
     conversation.scrollTop = conversation.scrollHeight;
@@ -505,7 +527,6 @@ async function sendMessage(message) {
         addMessage('assistant', 'Przepraszam, wystąpił błąd podczas przetwarzania Twojej prośby.');
     } finally {
         removeTypingIndicator(typingIndicator);
-        // loading.classList.add('hidden'); // Ukrycie ładowania
     }
 }
 
@@ -516,7 +537,7 @@ async function sendImage(imageData, isFile = true) {
         return;
     }
 
-    // loading.classList.remove('hidden'); // Pokazanie ładowania
+    const typingIndicator = showTypingIndicator();
 
     const formData = new FormData();
     formData.append('historyId', currentHistoryId);
@@ -551,7 +572,9 @@ async function sendImage(imageData, isFile = true) {
         console.error('Błąd:', error);
         addMessage('assistant', 'Przepraszam, wystąpił błąd podczas przetwarzania Twojej prośby.');
     } finally {
-        // loading.classList.add('hidden'); // Ukrycie ładowania
+        // Przywróć przycisk dodawania obrazu po wysłaniu
+        restoreAddImageButton();
+        removeTypingIndicator(typingIndicator);
     }
 }
 

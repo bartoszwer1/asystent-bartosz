@@ -16,10 +16,6 @@ body {
     color: #e0e0e0; /* Jasny kolor tekstu dla kontrastu */
 }
 
-body.light-mode {
-    background-color: #ffffff;
-}
-
 /* Kontener główny */
 .container {
     width: 1px;
@@ -391,6 +387,11 @@ header h1 {
     animation: spin 1s linear infinite;
 } */
 
+.fade-in {
+    opacity: 0;
+    transform: translateY(10px);
+    animation: fadeIn 0.3s forwards;
+}
 
 @keyframes spin {
     0% { transform: rotate(0deg); }
@@ -940,4 +941,108 @@ header h1 {
 
 .message-footer .download-button:hover {
     background-color: #e6b800; /* Ciemniejszy żółty przycisk */
+}
+
+/* Przycisk przełączania trybu */
+.theme-button {
+    position: absolute;
+    top: 15px;
+    right: 60px; /* Umieść obok model-button */
+    background: none;
+    border: none;
+    color: #ffffff;
+    font-size: 1.5em;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.theme-button:hover {
+    color: #ffcc00; /* Zmiana koloru na żółty przy najechaniu */
+}
+
+/* Style dla trybu jasnego */
+body.light-mode {
+    background-color: #ffffff;
+    color: #1e1e2e;
+}
+
+body.light-mode .container {
+    background-color: #f0f0f0; /* Jasny kolor tła kontenera */
+}
+
+body.light-mode header {
+    background-color: #ffffff; /* Jasny kolor nagłówka */
+    color: #1e1e2e;
+}
+
+body.light-mode .history-sidebar {
+    background-color: #f0f0f0;
+    color: #1e1e2e;
+}
+
+body.light-mode .model-button,
+body.light-mode .history-button,
+body.light-mode .close-button,
+body.light-mode .rename-button,
+body.light-mode .delete-histories-button,
+body.light-mode .new-history-button,
+body.light-mode .export-history-button,
+body.light-mode .import-history-button {
+    background-color: rgba(0, 0, 0, 0.1); /* Jasne tło przycisków */
+    color: #1e1e2e;
+}
+
+body.light-mode .conversation {
+    background-color: #ffffff;
+}
+
+body.light-mode .input-area {
+    background-color: #ffffff;
+    border-top: 1px solid #cccccc;
+}
+
+body.light-mode .input-area input {
+    background-color: #f9f9f9;
+    color: #1e1e2e;
+    border: 1px solid #cccccc;
+}
+
+body.light-mode .input-area button {
+    background-color: #4CAF50; /* Zielony przycisk w jasnym trybie */
+    color: #ffffff;
+}
+
+body.light-mode .input-area button:hover {
+    background-color: #45a049;
+}
+
+/* Dostosuj inne elementy, aby dobrze wyglądały w trybie jasnym */
+body.light-mode .history-item:hover {
+    background-color: #dcdcdc; /* Jasny fiolet przy najechaniu */
+}
+
+body.light-mode .download-button {
+    background-color: #ffd700; /* Żółty kolor */
+    color: #1e1e2e;
+}
+
+body.light-mode .download-button:hover {
+    background-color: #e6b800; /* Ciemniejszy żółty przycisk */
+}
+
+.copy-link-button {
+    margin-top: 5px;
+    padding: 5px 10px;
+    background-color: #3498db; /* Niebieski kolor */
+    color: #ffffff; /* Jasny kolor tekstu */
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8em;
+    transition: background-color 0.3s ease;
+    margin-left: 5px;
+}
+
+.copy-link-button:hover {
+    background-color: #2980b9; /* Ciemniejszy niebieski przy najechaniu */
 }
