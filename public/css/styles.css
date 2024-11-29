@@ -878,21 +878,6 @@ header h1 {
     40% { opacity: 1; }
 }
 
-.export-history-button, .import-history-button {
-    padding: 10px 15px;
-    background-color: #3498db; /* Niebieski kolor */
-    color: #ffffff;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 0.9em;
-    transition: background-color 0.3s ease;
-}
-
-.export-history-button:hover, .import-history-button:hover {
-    background-color: #2980b9; /* Ciemniejszy niebieski przy najechaniu */
-}
-
 #searchHistory {
     width: 90%;
     margin: 10px auto;

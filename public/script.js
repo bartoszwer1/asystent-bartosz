@@ -368,7 +368,6 @@ function addMessage(sender, text, isImage = false) {
         // Przycisk "Pobierz"
         const downloadButton = document.createElement('button');
         downloadButton.textContent = 'Pobierz';
-        // downloadButton.innerHTML = '<i class="fas fa-download"></i> Pobierz';
         downloadButton.classList.add('download-button');
         downloadButton.addEventListener('click', async () => {
             try {
@@ -707,7 +706,7 @@ async function loadConversation(historyId) {
             data.history.messages.forEach(msg => {
                 // Wyświetlaj tylko wiadomości z rolami 'user' i 'assistant'
                 if (msg.role === 'user' || msg.role === 'assistant') {
-                    if (msg.role === 'assistant' && (currentModel === 'dall-e-2' || currentModel === 'dall-e-3' || currentModel === 'interpretacja-zdjec')) {
+                    if (msg.role === 'assistant' && isImageURL(msg.content)) {
                         addMessage(msg.role, msg.content, true);
                     } else {
                         addMessage(msg.role, msg.content);
@@ -720,6 +719,11 @@ async function loadConversation(historyId) {
     } catch (error) {
         console.error('Błąd:', error);
     }
+}
+
+// Funkcja do sprawdzania, czy tekst jest URL-em obrazu
+function isImageURL(url) {
+    return /\.(jpeg|jpg|gif|png|svg|webp|bmp)$/.test(url.toLowerCase());
 }
 
 // Search History Function
@@ -793,95 +797,6 @@ async function deleteAllHistories() {
         console.error('Błąd:', error);
     }
 }
-
-// Export History Function
-async function exportHistory() {
-    if (!currentHistoryId) {
-        alert('Proszę wybrać historię do eksportu.');
-        return;
-    }
-
-    try {
-        const response = await fetch(`/api/histories/${currentHistoryId}`);
-        const data = await response.json();
-        if (response.ok) {
-            const blob = new Blob([JSON.stringify(data.history, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${data.history.name}.json`;
-            a.click();
-            URL.revokeObjectURL(url);
-        } else {
-            alert('Błąd podczas eksportu historii.');
-        }
-    } catch (error) {
-        console.error('Błąd:', error);
-        alert('Wystąpił błąd podczas eksportu historii.');
-    }
-}
-
-// Import History Function
-function importHistory() {
-    const fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.accept = 'application/json';
-    fileInput.style.display = 'none';
-    fileInput.id = 'importFileInput';
-    document.body.appendChild(fileInput);
-
-    fileInput.click();
-
-    fileInput.addEventListener('change', async () => {
-        const file = fileInput.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = async function(e) {
-                try {
-                    const historyData = JSON.parse(e.target.result);
-                    const response = await fetch('/api/histories', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ name: historyData.name })
-                    });
-                    const data = await response.json();
-                    if (response.ok) {
-                        const newHistoryId = data.historyId;
-                        // Zapisz wiadomości z zaimportowanej historii
-                        for (const msg of historyData.messages) {
-                            await fetch('/api/chat', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify({
-                                    historyId: newHistoryId,
-                                    message: msg.content,
-                                    model: currentModel
-                                })
-                            });
-                        }
-                        loadHistories();
-                        alert('Historia została zaimportowana.');
-                    } else {
-                        alert('Błąd podczas importowania historii.');
-                    }
-                } catch (error) {
-                    console.error('Błąd:', error);
-                    alert('Nieprawidłowy format pliku.');
-                }
-            };
-            reader.readAsText(file);
-        }
-        fileInput.remove();
-    });
-}
-
-// Event Listeners for Export/Import Buttons
-document.getElementById('exportHistoryButton').addEventListener('click', exportHistory);
-document.getElementById('importHistoryButton').addEventListener('click', importHistory);
 
 // Funkcja do otwierania modalu wyboru modelu
 function openModelModal() {
